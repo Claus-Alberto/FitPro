@@ -1,4 +1,5 @@
-﻿import STRINGS from '@/constants/diet_strings.json';
+import ALL_STRINGS from '../../../src/constants/strings.json';
+const STRINGS = { ...ALL_STRINGS.diet, units: ALL_STRINGS.common.units };
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { CameraView, useCameraPermissions } from 'expo-camera';

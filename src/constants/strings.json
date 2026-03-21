@@ -1,0 +1,188 @@
+{
+  "common": {
+    "units": {
+      "kg": "kg",
+      "kcal": "kcal",
+      "g": "g",
+      "spoon": "colher",
+      "filet": "filé",
+      "unit": "un",
+      "scoop": "dosador",
+      "serving": "porção",
+      "plate": "prato"
+    },
+    "actions": {
+      "seeAll": "Ver Tudo",
+      "start": "Iniciar",
+      "confirm": "Confirmar"
+    }
+  },
+  "dashboard": {
+    "greeting": "Bora transformar, {name}! 🚀",
+    "statusBadge": "O SHAPE TÁ VINDO • {date}",
+    "hero": {
+      "title": "Energia para hoje",
+      "streak": "{days} dias",
+      "calLabel": "kcal faltam"
+    },
+    "social": {
+      "proofText": "Junte-se a +15.000 alunos evoluindo agora."
+    },
+    "actions": {
+      "workout": "Iniciar Treino",
+      "meal": "Refeição",
+      "hydration": "Hidratação",
+      "market": "Mercado"
+    },
+    "journey": {
+      "title": "Sua Jornada de Sucesso",
+      "nextStep": "Próxima Evolução"
+    },
+    "metrics": {
+      "weightLabel": "Peso Monitorado"
+    }
+  },
+  "diet": {
+    "header": {
+      "todayGoals": "METAS DE HOJE",
+      "consumed": "CONSUMIDO",
+      "kcal": "KCAL",
+      "protein": "Proteína",
+      "carbs": "Carbo",
+      "fat": "Gordura"
+    },
+    "suggestion": {
+      "title": "Dica do Nutri",
+      "missingProtein": "Faltam",
+      "proteinSuffix": "g de proteína"
+    },
+    "meals": {
+      "breakfast": "Café da Manhã",
+      "lunch": "Almoço",
+      "snack": "Lanche da Tarde",
+      "dinner": "Jantar",
+      "empty": "Toque no + para adicionar",
+      "createExtra": "+ Criar Refeição Extra",
+      "emptyList": "Nenhum alimento nesta refeição.",
+      "clearItems": "Limpar Itens",
+      "deleteMeal": "Excluir Refeição"
+    },
+    "modals": {
+      "water": {
+        "title": "Hidratação",
+        "goal": "Meta:",
+        "save": "SALVAR",
+        "add": "ADICIONAR ÁGUA",
+        "unit": "mL",
+        "addedAlert": "Adicionado"
+      },
+      "photo": {
+        "title": "Analisar Prato",
+        "label": "O que tem no prato?",
+        "placeholder": "Ex: Frango grelhado, salada de alface...",
+        "analyzeBtn": "ANALISAR COM IA",
+        "analyzing": "Identificando alimentos...",
+        "permissionTitle": "Permissão necessária",
+        "permissionMsg": "Precisamos da câmera para fotografar seu prato."
+      },
+      "scanner": {
+        "title": "Escanear Código",
+        "subtitle": "Aponte para o código de barras do alimento",
+        "foundTitle": "Produto Encontrado!",
+        "addIn": "Adicionar em:",
+        "confirm": "ADICIONAR À DIETA",
+        "cancel": "Cancelar"
+      },
+      "creation": {
+        "title": "O que deseja criar?",
+        "photoTitle": "Foto do Prato",
+        "photoSub": "IA identifica os alimentos",
+        "foodTitle": "Novo Alimento",
+        "foodSub": "Cadastrar um item básico",
+        "recipeTitle": "Nova Receita",
+        "recipeSub": "Criar com ingredientes"
+      },
+      "recipe": {
+        "title": "Criar Receita",
+        "save": "SALVAR",
+        "perServing": "Por porção",
+        "yield": "renderam",
+        "nameLabel": "Nome da Receita",
+        "namePlaceholder": "Ex: Panqueca Fit...",
+        "descLabel": "Descrição (Opcional)",
+        "descPlaceholder": "Ex: Minha receita secreta...",
+        "ingredientsLabel": "Ingredientes",
+        "addIngredient": "Adicionar",
+        "emptyIngredients": "Nenhum ingrediente adicionado",
+        "stepsLabel": "Modo de Preparo",
+        "stepsPlaceholder": "Ex: Misturar tudo...",
+        "yieldLabel": "Rendimento (Porções)",
+        "success": "Receita criada!",
+        "errorName": "Nome da receita obrigatório",
+        "errorIngredients": "Adicione ingredientes"
+      },
+      "customFood": {
+        "title": "Novo Alimento",
+        "nameLabel": "Nome",
+        "namePlaceholder": "Ex: Tapioca...",
+        "kcalLabel": "Calorias (em 100g)",
+        "protLabel": "Prot (g)",
+        "carbLabel": "Carb (g)",
+        "fatLabel": "Gord (g)",
+        "save": "SALVAR ALIMENTO",
+        "success": "Alimento criado!",
+        "errorName": "Nome obrigatório"
+      },
+      "foodSearch": {
+        "titleAdd": "Adicionar Alimento",
+        "titleIngredient": "Ingrediente",
+        "placeholder": "Buscar...",
+        "homemade": "Receita Caseira"
+      },
+      "quantity": {
+        "select": "Selecione a quantidade",
+        "update": "ATUALIZAR",
+        "addIngredient": "ADD INGREDIENTE",
+        "add": "ADICIONAR",
+        "errorQty": "Quantidade inválida",
+        "errorUnit": "Selecione uma unidade",
+        "errorMeal": "Nenhuma refeição selecionada."
+      },
+      "newMeal": {
+        "title": "Nova Refeição",
+        "nameLabel": "Nome da Refeição",
+        "namePlaceholder": "Ex: Lanche da Manhã...",
+        "timeLabel": "Horário",
+        "create": "CRIAR",
+        "errorName": "Defina um nome para a refeição"
+      }
+    },
+    "alerts": {
+      "clearMealTitle": "Limpar Refeição",
+      "clearMealMsg": "Deseja remover todos os alimentos desta refeição?",
+      "cancel": "Cancelar",
+      "clear": "Limpar",
+      "deleteMealTitle": "Excluir Refeição",
+      "deleteMealMsgDefault": "é uma refeição padrão. Deseja removê-la da lista de hoje?",
+      "deleteMealMsgCustom": "Essa ação é irreversível e todos os alimentos serão perdidos.",
+      "delete": "Excluir",
+      "error": "Erro",
+      "success": "Sucesso",
+      "invalidFood": "Alimento inválido ou sem medidas cadastradas."
+    },
+    "food_names": {
+      "white_rice": "Arroz Branco",
+      "chicken_breast": "Peito de Frango",
+      "boiled_egg": "Ovo Cozido",
+      "whey_protein": "Whey Protein",
+      "protein_bar": "Barra de Proteína Power",
+      "ai_plate": "Prato Identificado (IA)"
+    },
+    "macros_short": {
+      "kcal": "CALORIAS",
+      "protein": "PROT",
+      "carbs": "CARBO",
+      "fat": "GORD"
+    }
+  }
+}
