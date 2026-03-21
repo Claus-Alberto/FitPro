@@ -41,5 +41,4 @@ yarn-error.*
 /android
 
 # tool-specific
-.agents/
 .sfdx/
