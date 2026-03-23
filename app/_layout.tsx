@@ -15,6 +15,10 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import ProfileSideDrawer from '../src/components/ProfileSideDrawer';
 import { ProfileDrawerProvider } from '../src/context/ProfileDrawerContext';
 
+// --- DATABASE IMPORTS ---
+import { initLocalDatabase } from '../src/database/db';
+import { WorkoutService } from '../src/features/workout/services/WorkoutService';
+
 export {
   // Catch any errors thrown by the Layout component.
   ErrorBoundary
@@ -40,8 +44,22 @@ export default function RootLayout() {
   }, [error]);
 
   useEffect(() => {
+    async function setupApp() {
+      try {
+        await initLocalDatabase();
+        await WorkoutService.seedInitialData();
+      } catch (e) {
+        console.warn('Erro fatal banco local:', e);
+      } finally {
+        if (loaded) {
+          SplashScreen.hideAsync();
+        }
+      }
+    }
+    
+    // Roda apenas se houver carga de fontes da view
     if (loaded) {
-      SplashScreen.hideAsync();
+      setupApp();
     }
   }, [loaded]);
 
