@@ -1,7 +1,12 @@
 import { useState, useEffect } from 'react';
 import { WorkoutService } from '../services/WorkoutService';
 
-export const CURRENT_PROGRAM = { name: "Projeto Verão 2025", phase: "Fase 2: Hipertrofia", week: 4, total_weeks: 12 };
+export interface ProgramData {
+  name: string;
+  phase: string;
+  week: number;
+  total_weeks: number;
+}
 
 export interface WorkoutData {
   title: string;
@@ -26,8 +31,10 @@ export const INITIAL_INDEX = 3;
  * com o banco de dados nativo (expo-sqlite) por baixo dos panos através do WorkoutService.
  */
 export const useWorkout = () => {
+  const [program, setProgram] = useState<ProgramData | null>(null);
   const [schedule, setSchedule] = useState<DaySchedule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [schedulingMode, setSchedulingMode] = useState<'calendar' | 'queue'>('queue');
   const [selectedIndex, setSelectedIndex] = useState(INITIAL_INDEX);
   const [selectedSkippedWorkout, setSelectedSkippedWorkout] = useState<DaySchedule | null>(null);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
@@ -40,10 +47,23 @@ export const useWorkout = () => {
   const fetchSchedule = async () => {
     setIsLoading(true);
     try {
-      const data = await WorkoutService.getWeeklySchedule();
-      if (data && data.length > 0) {
-        setSchedule(data);
+      const mode = await WorkoutService.getSchedulingMode();
+      setSchedulingMode(mode);
+
+      const activeProg = await WorkoutService.getActiveProgram();
+      if (activeProg) {
+        setProgram({
+          name: activeProg.title,
+          phase: activeProg.goal || 'Ficha Ativa',
+          week: 1, // Por enquanto fixo na semana 1 até implementarmos o contador de semanas
+          total_weeks: 12
+        });
+      } else {
+        setProgram(null);
       }
+
+      const data = await WorkoutService.getWeeklySchedule();
+      setSchedule(data);
     } catch (error) {
       console.warn('[useWorkout] Erro ao carregar SQLite:', error);
     } finally {
@@ -65,10 +85,20 @@ export const useWorkout = () => {
     }
   };
 
+  const toggleSchedulingMode = async () => {
+    const newMode = schedulingMode === 'calendar' ? 'queue' : 'calendar';
+    try {
+      await WorkoutService.setSchedulingMode(newMode);
+      setSchedulingMode(newMode);
+    } catch (e) { console.warn(e); }
+  };
+
   return {
-    program: CURRENT_PROGRAM,
+    program,
     schedule,
     isLoading,
+    schedulingMode,
+    toggleSchedulingMode,
     selectedIndex,
     setSelectedIndex,
     selectedSkippedWorkout,

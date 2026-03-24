@@ -1,50 +1,111 @@
 import { getDBConnection } from '../../../database/db';
 import { DaySchedule } from '../hooks/useWorkout';
 
-const INITIAL_SEED: DaySchedule[] = [
-  { id: '1', day: 'DOM', date: '23', status: 'rest', workout: null },
-  { id: '2', day: 'SEG', date: '24', status: 'completed', workout: { title: 'Peito, Ombros & Tríceps', type: 'Push', id: 'A', duration: '58 min' } },
-  { id: '3', day: 'TER', date: '25', status: 'skipped', workout: { title: 'Costas & Bíceps', type: 'Pull', id: 'B', duration: '60 min' } },
-  { id: '4', day: 'QUA', date: '26', status: 'today', workout: { title: 'Pernas Completo', type: 'Legs', id: 'C', duration: '70 min', kcal: '500' } },
-  { id: '5', day: 'QUI', date: '27', status: 'future', workout: { title: 'Peito & Tríceps (Foco Força)', type: 'Push B', id: 'A2', duration: '55 min' } },
-  { id: '6', day: 'SEX', date: '28', status: 'future', workout: { title: 'Costas & Trapézio', type: 'Pull B', id: 'B2', duration: '60 min' } },
-  { id: '7', day: 'SÁB', date: '29', status: 'future', workout: { title: 'Cardio & Abs', type: 'Active Rest', id: 'CR', duration: '40 min' } },
-];
+// O BLANK_SEED agora só define a estrutura básica de dias para quando não há nada no log.
+const getBlankWeek = (): DaySchedule[] => {
+  const days = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
+  const today = new Date();
+  
+  return Array.from({ length: 7 }).map((_, i) => {
+    const d = new Date();
+    d.setDate(today.getDate() - 3 + i); // 3 dias atrás até 3 dias à frente
+    return {
+      id: `day_${i}`,
+      day: days[d.getDay()],
+      date: d.getDate().toString(),
+      status: i === 3 ? 'today' : (i < 3 ? 'skipped' : 'future'),
+      workout: null
+    };
+  });
+};
 
-/**
- * @description Classe de Serviço que abstrai as Queries de SQLite diretamente aos componentes visuais.
- * Componentes devem consultar/modificar dados EXCLUSIVAMENTE interligando-se a essa camada via Hooks.
- */
 export class WorkoutService {
-  /**
-   * Preenche a tabela inicial caso o banco de dados esteja vazio, permitindo testar o app offline.
-   * @returns {Promise<void>}
-   */
   static async seedInitialData(): Promise<void> {
-    const db = await getDBConnection();
-    
-    const result: any = await db.getFirstAsync('SELECT COUNT(*) as count FROM WorkoutSchedule');
-    
-    if (result && result.count === 0) {
-      for (const item of INITIAL_SEED) {
-        await db.runAsync(
-          'INSERT INTO WorkoutSchedule (id, day, date, status, workout_data) VALUES (?, ?, ?, ?, ?)',
-          [item.id, item.day, item.date, item.status, item.workout ? JSON.stringify(item.workout) : null]
-        );
-      }
-      console.log('[WorkoutService] Dados iniciais (Seed) inseridos no SQLite local.');
-    }
+    // Não vamos mais seedar dados fakes no WorkoutV3.
+    // O banco deve começar limpo para o usuário criar sua própria ficha.
   }
 
-  /**
-   * Recupera todos os dados do cronograma sequencialmente pelo ID de criação.
-   * @returns {Promise<DaySchedule[]>}
-   */
+  // == PREFERENCES API ==
+  static async getSchedulingMode(): Promise<'calendar' | 'queue'> {
+    const db = await getDBConnection();
+    const result: any = await db.getFirstAsync('SELECT value FROM UserPreferences WHERE key = "schedulingMode"');
+    return (result?.value as 'calendar' | 'queue') || 'queue';
+  }
+
+  static async setSchedulingMode(mode: 'calendar' | 'queue'): Promise<void> {
+    const db = await getDBConnection();
+    await db.runAsync('UPDATE UserPreferences SET value = ? WHERE key = "schedulingMode"', [mode]);
+  }
+
+  // == PROGRAMS API ==
+  static async getActiveProgram(): Promise<any> {
+    const db = await getDBConnection();
+    const program: any = await db.getFirstAsync('SELECT * FROM WorkoutPrograms WHERE is_active = 1');
+    if (!program) return null;
+    
+    const sessions = await db.getAllAsync('SELECT * FROM WorkoutSessions WHERE program_id = ? ORDER BY letter ASC', [program.id]);
+    return { ...program, sessions };
+  }
+
+  static async saveNewProgram(programTitle: string, goal: string, sessions: { letter: string, title: string, duration_estimate: number }[]): Promise<void> {
+    const db = await getDBConnection();
+    const programId = `PROG_${Date.now()}`;
+    
+    await db.runAsync('UPDATE WorkoutPrograms SET is_active = 0');
+
+    await db.runAsync(
+      'INSERT INTO WorkoutPrograms (id, title, goal, is_active) VALUES (?, ?, ?, ?)',
+      [programId, programTitle, goal, 1]
+    );
+
+    for (const [index, s] of sessions.entries()) {
+      await db.runAsync(
+        'INSERT INTO WorkoutSessions (id, program_id, letter, title, duration_estimate) VALUES (?, ?, ?, ?, ?)',
+        [`SESS_${Date.now()}_${index}`, programId, s.letter, s.title, s.duration_estimate]
+      );
+    }
+    
+    // Ao criar um novo programa em modo QUEUE, a gente pode querer limpar o histórico V3 
+    // ou apenas deixar o novo rodízio assumir. Vamos deixar o rodízio assumir.
+  }
+
+  // == HYBRID SCHEDULING API ==
   static async getWeeklySchedule(): Promise<DaySchedule[]> {
     const db = await getDBConnection();
-    const rows: { id: string, day: string, date: string, status: string, workout_data: string | null }[] = await db.getAllAsync(
-      'SELECT * FROM WorkoutSchedule ORDER BY CAST(id AS INTEGER) ASC'
-    );
+    const mode = await this.getSchedulingMode();
+    const activeProgram = await this.getActiveProgram();
+    
+    if (!activeProgram || activeProgram.sessions.length === 0) {
+      return getBlankWeek();
+    }
+
+    if (mode === 'queue') {
+      const sessions = activeProgram.sessions;
+      const week = getBlankWeek();
+      
+      // Lógica de Fila Simples: 
+      // Hoje (index 3) é o próximo na sequência. 
+      // Por enquanto, vamos apenas girar o carrossel.
+      return week.map((day, i) => {
+        // Rotaciona as sessões (A, B, C, A, B...)
+        const sessionIndex = i % sessions.length;
+        const session = sessions[sessionIndex];
+        
+        return {
+          ...day,
+          workout: {
+            id: session.id,
+            title: `Treino ${session.letter}`,
+            type: session.title,
+            duration: `${session.duration_estimate} min`
+          }
+        };
+      });
+    }
+
+    // fallback calendar (legado v3 por enquanto)
+    const rows: any[] = await db.getAllAsync('SELECT * FROM WorkoutV3 ORDER BY CAST(id AS INTEGER) ASC');
+    if (rows.length === 0) return getBlankWeek();
     
     return rows.map(row => ({
       id: row.id,
@@ -55,15 +116,8 @@ export class WorkoutService {
     }));
   }
 
-  /**
-   * Atualiza isoladamente o Status de um dia.
-   * Útil para modais de "Pular" ou "Finalizar" Treino.
-   * @param {string} id - ID numérico formatado como string.
-   * @param {string} newStatus - 'rest' | 'completed' | 'skipped' | 'today' | 'future'
-   * @returns {Promise<void>}
-   */
   static async updateDayStatus(id: string, newStatus: string): Promise<void> {
     const db = await getDBConnection();
-    await db.runAsync('UPDATE WorkoutSchedule SET status = ? WHERE id = ?', [newStatus, id]);
+    await db.runAsync('UPDATE WorkoutV3 SET status = ? WHERE id = ?', [newStatus, id]);
   }
 }

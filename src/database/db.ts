@@ -22,18 +22,47 @@ export const getDBConnection = async (): Promise<SQLite.SQLiteDatabase> => {
  */
 export const initLocalDatabase = async (): Promise<void> => {
   const db = await getDBConnection();
-  
-  await db.execAsync(`
-    PRAGMA journal_mode = WAL;
+    await db.execAsync(`
+      PRAGMA journal_mode = WAL;
+      PRAGMA foreign_keys = ON;
 
-    CREATE TABLE IF NOT EXISTS WorkoutSchedule (
-      id TEXT PRIMARY KEY,
-      day TEXT NOT NULL,
-      date TEXT NOT NULL,
-      status TEXT NOT NULL,
-      workout_data TEXT
-    );
-  `);
+      -- Calendário / Fila Rotativa (O Log em si)
+      CREATE TABLE IF NOT EXISTS WorkoutV3 (
+        id TEXT PRIMARY KEY,
+        day TEXT NOT NULL,
+        date TEXT NOT NULL,
+        status TEXT NOT NULL,
+        workout_data TEXT
+      );
+
+      -- Fichas de Treino (Templates)
+      CREATE TABLE IF NOT EXISTS WorkoutPrograms (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        goal TEXT,
+        difficulty TEXT,
+        is_active INTEGER DEFAULT 0
+      );
+
+      -- Divisões do Treino (Treino A, B, C...)
+      CREATE TABLE IF NOT EXISTS WorkoutSessions (
+        id TEXT PRIMARY KEY,
+        program_id TEXT NOT NULL,
+        letter TEXT NOT NULL,
+        title TEXT NOT NULL,
+        duration_estimate INTEGER,
+        FOREIGN KEY(program_id) REFERENCES WorkoutPrograms(id) ON DELETE CASCADE
+      );
+
+      -- Configurações e Toggles do App
+      CREATE TABLE IF NOT EXISTS UserPreferences (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      );
+
+      -- Injeção do Padrão Premium: A engine sempre nasce em modo "Fila Infinita" (Queue)
+      INSERT OR IGNORE INTO UserPreferences (key, value) VALUES ('schedulingMode', 'queue');
+    `);
 
   console.log('[SQLite] Tabelas verificadas/criadas com sucesso.');
 };

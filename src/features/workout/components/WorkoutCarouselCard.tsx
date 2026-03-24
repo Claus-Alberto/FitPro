@@ -16,8 +16,19 @@ export function WorkoutCarouselCard({ item, onPress }: Props) {
   const isRest = item.status === 'rest';
   const workout = item.workout;
 
-  // Renderiza Card de Descanso
-  if (isRest || !workout) {
+  // Renderiza Card Vazio (Sem treino marcado e não é descanso oficial)
+  if (!workout && !isRest) {
+    return (
+      <View style={[styles.carouselCard, { width: CARD_WIDTH, marginRight: SPACING, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F9FAFB', borderColor: '#E5E7EB', borderStyle: 'dashed', borderWidth: 2 }]}>
+        <MaterialCommunityIcons name="calendar-blank" size={40} color="#D1D5DB" />
+        <Text style={{ fontSize: 18, fontWeight: '800', color: '#9CA3AF', marginTop: 12 }}>Dia Livre</Text>
+        <Text style={{ fontSize: 14, color: '#9CA3AF', textAlign: 'center', marginTop: 8, paddingHorizontal: 20 }}>Você não tem nenhum treino agendado para este dia.</Text>
+      </View>
+    );
+  }
+
+  // Renderiza Card de Descanso EXPLÍCITO
+  if (isRest) {
     return (
       <View style={[styles.carouselCard, styles.restCard, { width: CARD_WIDTH, marginRight: SPACING }]}>
         <View style={styles.restContent}>

@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import {
   Dimensions,
@@ -8,8 +9,10 @@ import {
   StyleSheet,
   Text,
   View,
-  ActivityIndicator
+  ActivityIndicator,
+  TouchableOpacity
 } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 // --- IMPORTS DOS COMPONENTES ---
 import HistoryCalendarModal from '../../../../components/HistoryCalendarModal';
@@ -34,6 +37,8 @@ export default function WorkoutScreen() {
     program,
     schedule,
     isLoading,
+    schedulingMode,
+    toggleSchedulingMode,
     selectedIndex,
     setSelectedIndex,
     selectedSkippedWorkout,
@@ -78,11 +83,27 @@ export default function WorkoutScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 0, paddingTop: 0 }}>
 
         <View style={styles.headerContainer}>
-          <ProgramHeader
-            programName={program.name}
-            week={program.week}
-            totalWeeks={program.total_weeks}
-          />
+          {program ? (
+            <ProgramHeader 
+              programName={program.name} 
+              week={program.week} 
+              totalWeeks={program.total_weeks} 
+              schedulingMode={schedulingMode}
+              onToggleMode={toggleSchedulingMode}
+              onEditPress={() => router.push('/(tabs)/workout/create')}
+            />
+          ) : (
+            <TouchableOpacity 
+              style={styles.emptyCard} 
+              onPress={() => router.push('/(tabs)/workout/create')}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={styles.emptyLabel}>COMECE AGORA</Text>
+                <Text style={styles.emptyTitle}>Forje sua primeira ficha</Text>
+              </View>
+              <MaterialCommunityIcons name="plus-circle" size={32} color="#008E00" />
+            </TouchableOpacity>
+          )}
         </View>
 
         <WeeklyTimeline
@@ -138,8 +159,19 @@ export default function WorkoutScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FAFAFA' },
-  headerContainer: { padding: 20, paddingBottom: 0 },
+  headerContainer: { padding: 20, paddingBottom: 12 },
   carouselSection: {},
   carouselHeader: { paddingHorizontal: 20, marginBottom: 16 },
   sectionTitle: { fontSize: 18, fontWeight: '800', color: '#191511' },
+  emptyCard: { 
+    backgroundColor: '#191511', 
+    borderRadius: 20, 
+    padding: 24, 
+    flexDirection: 'row', 
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 142, 0, 0.3)'
+  },
+  emptyLabel: { color: '#008E00', fontSize: 10, fontWeight: '800', letterSpacing: 1, marginBottom: 4 },
+  emptyTitle: { color: '#FFFFFF', fontSize: 20, fontWeight: '800' },
 });
