@@ -38,14 +38,19 @@ export const DashboardJourney = ({
 
       <View style={styles.timelineWidget}>
         <View style={styles.timelineLine} />
-        {timeline.map((item, index) => (
-          <TimelineRow
-            key={item.id}
-            item={item}
-            isLast={index === timeline.length - 1}
-            onStart={onStartWorkout}
-          />
-        ))}
+        {timeline.map((item, index) => {
+          const prev = timeline[index - 1];
+          const isRepeat = item.status === "future" && item.hasData && prev?.status === "future" && prev.title === item.title;
+          return (
+            <TimelineRow
+              key={item.id}
+              item={item}
+              isLast={index === timeline.length - 1}
+              isRepeat={isRepeat}
+              onStart={onStartWorkout}
+            />
+          );
+        })}
       </View>
     </>
   );
@@ -57,10 +62,12 @@ export const DashboardJourney = ({
 const TimelineRow = ({
   item,
   isLast,
+  isRepeat,
   onStart,
 }: {
   item: WorkoutItem;
   isLast: boolean;
+  isRepeat: boolean;
   onStart: () => void;
 }) => {
   let dotColor = COLORS.gray200;
@@ -73,7 +80,10 @@ const TimelineRow = ({
     dotBorder = COLORS.primary;
     icon = "check";
     titleColor = COLORS.gray800;
-  } else if (item.status === "skipped") {
+  } else if (item.status === "skipped" && item.hasData) {
+    // Só o vermelho de "falhou" quando de fato havia um treino marcado — um dia sem nenhum
+    // registro (antes de existir ficha, ou app não aberto naquele dia) cai no default acima
+    // (ponto cinza neutro), pra não parecer que o usuário falhou algo que nem existia.
     dotColor = COLORS.error;
     dotBorder = COLORS.error;
     icon = "close";
@@ -84,15 +94,19 @@ const TimelineRow = ({
     titleColor = COLORS.secondary;
   }
 
+  const isToday = item.status === "pending";
+
   return (
-    <View style={[styles.timelineRow, isLast && { marginBottom: 0 }]}>
+    <View
+      style={[
+        styles.timelineRow,
+        item.status === "completed" || item.status === "skipped" ? styles.timelineRowCompact : null,
+        isToday && styles.timelineRowToday,
+        isLast && { marginBottom: 0 },
+      ]}
+    >
       <View style={styles.dateCol}>
-        <Text
-          style={[
-            styles.dayText,
-            item.status === "pending" && styles.todayText,
-          ]}
-        >
+        <Text style={[styles.dayText, isToday && styles.todayText]}>
           {item.day}
         </Text>
       </View>
@@ -101,7 +115,7 @@ const TimelineRow = ({
           style={[
             styles.node,
             { backgroundColor: dotColor, borderColor: dotBorder },
-            item.status === "pending" && styles.nodePulse,
+            isToday && styles.nodePulse,
           ]}
         >
           {icon && (
@@ -114,16 +128,32 @@ const TimelineRow = ({
         </View>
       </View>
       <View style={styles.infoCol}>
-        <Text style={[styles.workoutTitle, { color: titleColor }]}>
-          {item.title}
-        </Text>
-        {item.status === "pending" && (
+        <View style={styles.titleRow}>
+          <Text
+            style={[
+              styles.workoutTitle,
+              { color: titleColor },
+              isRepeat && styles.workoutTitleRepeat,
+            ]}
+          >
+            {isRepeat ? STRINGS.dashboard.journey.sameWorkout : item.title}
+          </Text>
+          {item.status === "completed" && (
+            <MaterialCommunityIcons
+              name="check"
+              size={13}
+              color={COLORS.primary}
+              style={styles.completedIcon}
+            />
+          )}
+        </View>
+        {isToday && (
           <Text style={styles.nowLabel}>
             {STRINGS.dashboard.journey.nextStep}
           </Text>
         )}
       </View>
-      {item.status === "pending" && (
+      {isToday && (
         <TouchableOpacity style={styles.playButton} onPress={onStart}>
           <MaterialCommunityIcons
             name="play"
@@ -177,6 +207,18 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     zIndex: 1,
   },
+  timelineRowCompact: {
+    // Dias concluídos/pulados já aconteceram e não pedem ação — menos altura pra sobrar espaço
+    // visual pro dia de hoje e pros próximos, que são os que importam pro usuário agora.
+    marginBottom: 12,
+  },
+  timelineRowToday: {
+    backgroundColor: COLORS.successLight,
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    marginHorizontal: -10,
+  },
   dateCol: {
     width: 45,
     alignItems: "flex-end",
@@ -215,9 +257,22 @@ const styles = StyleSheet.create({
   infoCol: {
     flex: 1,
   },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
   workoutTitle: {
     fontSize: 15,
     fontWeight: "600",
+  },
+  workoutTitleRepeat: {
+    fontSize: 13,
+    fontWeight: "500",
+    fontStyle: "italic",
+  },
+  completedIcon: {
+    marginLeft: 6,
+    opacity: 0.6,
   },
   nowLabel: {
     fontSize: 11,

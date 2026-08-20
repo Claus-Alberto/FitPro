@@ -1,6 +1,5 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import STRINGS from "../../../constants/strings.json";
 import { COLORS, SPACING, TYPOGRAPHY } from "../../../constants/theme";
 
@@ -10,16 +9,17 @@ interface DashboardHeaderProps {
 }
 
 /**
- * @description Header component for the Dashboard showing greeting and current date.
+ * @description Header component for the Dashboard showing greeting and current date. Rendered
+ * below the tab navigator's own native header (`app/(tabs)/_layout.tsx`, logo + avatar), which
+ * already accounts for the status bar inset — no extra `insets.top` needed here, or the gap
+ * between the two headers doubles up.
  * @param {string} userName - The name of the user to be greeted.
  * @param {string} formattedDate - The current formatted date string.
  * @returns {JSX.Element} The rendered header component.
  */
 export const DashboardHeader = ({ userName, formattedDate }: DashboardHeaderProps) => {
-  const insets = useSafeAreaInsets();
-
   return (
-    <View style={[styles.header, { paddingTop: insets.top + SPACING.sm }]}>
+    <View style={[styles.header, { paddingTop: SPACING.sm }]}>
       <View>
         <Text style={styles.greeting}>
           {STRINGS.dashboard.greeting.replace("{name}", userName)}

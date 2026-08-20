@@ -1,9 +1,10 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
-import { Stack, useNavigation, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import React, { useEffect, useLayoutEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Dimensions,
   Image,
   KeyboardAvoidingView,
@@ -29,8 +30,13 @@ import { MusicWidget } from '../../../../components/workout/active/MusicWidget';
 import { ProofModal } from '../../../../components/workout/active/ProofModal';
 import { RestOverlay } from '../../../../components/workout/active/RestOverlay';
 import { WorkoutTimer } from '../../../../components/workout/active/WorkoutTimer';
+import { ExerciseMediaService } from '../services/ExerciseMediaService';
+import { WorkoutService } from '../services/WorkoutService';
 
 const { width } = Dimensions.get('window');
+
+/** @description Formata um Date para 'YYYY-MM-DD', consistente com a chave de data usada no schema. */
+const toISODate = (d: Date): string => d.toISOString().slice(0, 10);
 
 // IMAGEM PREMIUM
 const HERO_IMAGE = "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80";
@@ -38,28 +44,11 @@ const HERO_IMAGE = "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61
 // --- DESAFIO DO DIA ---
 const DAILY_CHALLENGE = "Tire uma foto fazendo um 'Hang Loose' 🤙 ao lado do aparelho!";
 
-// --- DADOS MOCKADOS TREINO ---
-const INITIAL_WORKOUT_DATA = {
-  id: 'B',
-  title: 'Costas, Bíceps & Trapézio',
-  exercises: [
-    {
-      id: 1,
-      name: "Puxada Alta (Polia)",
-      sets: [
-        { id: 1, prev_weight: 45, prev_reps: 12, target_reps: 12 },
-        { id: 2, prev_weight: 50, prev_reps: 10, target_reps: 10 },
-        { id: 3, prev_weight: 55, prev_reps: 8, target_reps: 8 },
-      ]
-    },
-    { id: 2, name: "Remada Curvada", sets: [{ id: 1, prev_weight: 60, prev_reps: 10, target_reps: 10 }] },
-    { id: 3, name: "Rosca Direta", sets: [{ id: 1, prev_weight: 12, prev_reps: 12, target_reps: 12 }] }
-  ]
-};
-
+// Fallback só pra exercícios digitados na mão (fora do catálogo) — sem `images`: nenhuma fonte de
+// mídia com licença própria pra esse caso, então o modal cai no placeholder em vez de mostrar algo.
 const EXERCISE_INSTRUCTIONS = {
-  gifUrl: "https://image.tuasaude.com/media/article/gj/wg/exercicios-para-biceps-e-triceps_30542.gif?width=686&height=487",
-  difficulty: "Intermediário",
+  images: [] as string[],
+  difficulty: null,
   primaryMuscle: "Grande Dorsal",
   secondaryMuscles: ["Bíceps", "Trapézio"],
   steps: ["Sente-se e prenda os joelhos.", "Segure a barra aberta.", "Puxe até o peito.", "Controle a volta."],
@@ -80,6 +69,7 @@ export default function ActiveWorkoutScreen() {
   const navigation = useNavigation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const params = useLocalSearchParams<{ date?: string; sessionId?: string }>();
 
   // PERMISSÃO CÂMERA
   const [permission, requestPermission] = useCameraPermissions();
@@ -95,7 +85,11 @@ export default function ActiveWorkoutScreen() {
   const activeTrack = CURRENT_SONG;
   const isPlayerReady = true;
 
-  const [workoutData, setWorkoutData] = useState(INITIAL_WORKOUT_DATA);
+  // Data real do dia sendo treinado (vem da tela anterior ou, na ausência de params,
+  // resolve "hoje" pela fila real do WorkoutService).
+  const [sessionDate, setSessionDate] = useState<string>(params.date || toISODate(new Date()));
+  const [isLoadingWorkout, setIsLoadingWorkout] = useState(true);
+  const [workoutData, setWorkoutData] = useState<any>(null);
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(true);
@@ -116,6 +110,76 @@ export default function ActiveWorkoutScreen() {
   const [editingCell, setEditingCell] = useState<{
     exIndex: number, setIndex: number, field: 'weight' | 'reps', currentValue: string
   } | null>(null);
+
+  // Carrega os exercícios reais da sessão (Treino A/B/C...) a partir do SQLite, em vez do
+  // INITIAL_WORKOUT_DATA fixo que existia antes. O peso/reps "fantasma" (prev_weight/prev_reps)
+  // vem da última série de fato registrada para cada exercício.
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadWorkout = async () => {
+      setIsLoadingWorkout(true);
+      try {
+        let sessionId = params.sessionId;
+        if (!sessionId) {
+          const resolved = await WorkoutService.resolveSessionForOffset(0);
+          sessionId = resolved?.id;
+        }
+
+        if (!sessionId) {
+          if (!cancelled) { setWorkoutData(null); setIsLoadingWorkout(false); }
+          return;
+        }
+
+        const [session, exerciseDefs] = await Promise.all([
+          WorkoutService.getSessionById(sessionId),
+          WorkoutService.getSessionExercises(sessionId),
+        ]);
+
+        const exercises = await Promise.all(exerciseDefs.map(async (def, exIndex) => {
+          // Se o exercício veio do catálogo (biblioteca), busca os dados reais (músculos-alvo)
+          // pra usar no modal de informações, em vez do EXERCISE_INSTRUCTIONS fixo/genérico.
+          const [history, libraryEntry] = await Promise.all([
+            WorkoutService.getLastPerformance(def.name),
+            def.library_id ? WorkoutService.getExerciseLibraryEntry(def.library_id) : Promise.resolve(null),
+          ]);
+          const targetSets = def.target_sets || 3;
+          return {
+            id: exIndex + 1,
+            name: def.name,
+            libraryEntry,
+            sets: Array.from({ length: targetSets }).map((_, setIdx) => {
+              const prev = history.find(h => h.set_index === setIdx);
+              return {
+                id: setIdx + 1,
+                prev_weight: prev?.weight ?? 0,
+                prev_reps: prev?.reps ?? 0,
+                // Meta de reps real definida na ficha (target_reps); só cai pro fallback fixo (12)
+                // se a ficha não tiver essa coluna preenchida (fichas criadas antes desse campo existir).
+                target_reps: prev?.reps ?? def.target_reps ?? 12,
+              };
+            }),
+          };
+        }));
+
+        if (!cancelled) {
+          setWorkoutData({
+            id: sessionId,
+            title: session?.title || 'Treino',
+            exercises: exercises.length > 0 ? exercises : [{ id: 1, name: 'Sem exercícios cadastrados', sets: [{ id: 1, prev_weight: 0, prev_reps: 0, target_reps: 0 }] }],
+          });
+        }
+      } catch (error) {
+        console.warn('[ActiveWorkoutScreen] Erro ao carregar treino real:', error);
+        if (!cancelled) setWorkoutData(null);
+      } finally {
+        if (!cancelled) setIsLoadingWorkout(false);
+      }
+    };
+
+    loadWorkout();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -186,7 +250,7 @@ export default function ActiveWorkoutScreen() {
 
   const checkExerciseCompletion = (exIndex: number) => {
     const exercise = workoutData.exercises[exIndex];
-    return exercise.sets.every((_, setIdx) => inputData[`${exIndex}-${setIdx}`]?.completed);
+    return exercise.sets.every((_: any, setIdx: number) => inputData[`${exIndex}-${setIdx}`]?.completed);
   };
 
   const handleAddSet = () => {
@@ -231,13 +295,84 @@ export default function ActiveWorkoutScreen() {
   // --- FINALIZAR TREINO ---
   const handleFinishWorkout = () => setIsFinishModalOpen(true);
 
-  const confirmFinish = () => {
+  const confirmFinish = async () => {
     setIsFinishModalOpen(false);
-    router.push('/workout/summary');
+
+    // Monta as séries realmente completadas (toggle marcado) a partir do inputData e persiste
+    // no SQLite via WorkoutService — substitui o antigo `router.push` direto sem salvar nada.
+    const sets: { exerciseName: string; setIndex: number; weight: number; reps: number; completed: boolean }[] = [];
+    let prCount = 0;
+    workoutData.exercises.forEach((ex: any, exIndex: number) => {
+      ex.sets.forEach((set: any, setIndex: number) => {
+        const entry = inputData[`${exIndex}-${setIndex}`];
+        if (!entry?.completed) return;
+        const weight = parseFloat(entry.weight) || 0;
+        const reps = parseInt(entry.reps, 10) || 0;
+        sets.push({ exerciseName: ex.name, setIndex, weight, reps, completed: true });
+        if (weight > (set.prev_weight || 0)) prCount += 1;
+      });
+    });
+
+    const { totalVolumeKg } = await WorkoutService.completeWorkout({
+      date: sessionDate,
+      sessionId: workoutData.id,
+      sessionTitle: workoutData.title,
+      durationSeconds: elapsedTime,
+      sets,
+      photos: Object.values(proofImages),
+    });
+
+    const minutes = Math.floor(elapsedTime / 60);
+    const seconds = elapsedTime % 60;
+
+    router.push({
+      pathname: '/workout/summary',
+      params: {
+        workoutName: workoutData.title,
+        duration: `${minutes}:${seconds.toString().padStart(2, '0')}`,
+        totalVolume: `${totalVolumeKg.toFixed(1)} kg`,
+        prs: String(prCount),
+      },
+    });
   };
+
+  if (isLoadingWorkout || !workoutData) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Stack.Screen options={{ headerShown: false }} />
+        {isLoadingWorkout ? (
+          <ActivityIndicator size="large" color="#008E00" />
+        ) : (
+          <>
+            <Text style={{ color: '#FFF', fontSize: 16, fontWeight: '700', marginBottom: 16, textAlign: 'center', paddingHorizontal: 32 }}>
+              Nenhuma ficha de treino ativa encontrada.
+            </Text>
+            <TouchableOpacity style={styles.mapBtn} onPress={() => router.replace('/(tabs)/workout/create')}>
+              <Text style={styles.mapBtnText}>FORJAR FICHA</Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </View>
+    );
+  }
 
   const currentExercise = workoutData.exercises[currentExerciseIndex];
   const currentProof = proofImages[currentExerciseIndex];
+
+  // Instruções reais do catálogo (quando o exercício veio de lá) em vez do EXERCISE_INSTRUCTIONS
+  // fixo — que agora só serve de fallback pra exercícios digitados na mão (fora do catálogo).
+  // Sem gif/foto (mídia do dataset tem licença própria da Gym Visual) e sem passo-a-passo
+  // (o dataset só tem instruções em inglês; a tradução completa fica pra uma próxima etapa).
+  const currentInstructions = currentExercise.libraryEntry
+    ? {
+        images: ExerciseMediaService.getImageUrls(currentExercise.libraryEntry.id),
+        difficulty: null,
+        primaryMuscle: currentExercise.libraryEntry.target_pt,
+        secondaryMuscles: currentExercise.libraryEntry.secondary_muscles_pt,
+        steps: [],
+        mistake: null,
+      }
+    : EXERCISE_INSTRUCTIONS;
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -369,9 +504,9 @@ export default function ActiveWorkoutScreen() {
       />
 
       <ExerciseInfoModal
+        instructions={currentInstructions}
         visible={isInfoOpen}
         exerciseName={currentExercise.name}
-        instructions={EXERCISE_INSTRUCTIONS}
         onClose={() => setIsInfoOpen(false)}
         bottomInset={insets.bottom}
       />

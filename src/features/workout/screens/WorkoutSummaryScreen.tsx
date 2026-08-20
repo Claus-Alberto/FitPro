@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -26,19 +26,22 @@ const { width, height } = Dimensions.get('window');
 // IMPORT DO LOGO OFICIAL
 const LOGO_IMAGE = require('../../../../assets/images/logotipobg.png');
 
-// DADOS MOCKADOS DO RESUMO
-const SUMMARY_DATA = {
-  workoutName: "Costas, Bíceps & Trapézio",
-  duration: "58:30",
-  totalVolume: "12.500 kg",
-  calories: "480",
-  prs: 3,
-  xpEarned: "+450 XP"
-};
-
 export default function WorkoutSummaryScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const params = useLocalSearchParams<{ workoutName?: string; duration?: string; totalVolume?: string; prs?: string }>();
+
+  // Resumo real do treino que acabou de ser salvo (vem via params de ActiveWorkoutScreen).
+  // `calories` e `xpEarned` ainda não têm uma fonte de dados real (dependem de um cálculo
+  // metabólico/motor de XP que não existe ainda), então continuam estimados por enquanto.
+  const SUMMARY_DATA = {
+    workoutName: params.workoutName || 'Treino',
+    duration: params.duration || '0:00',
+    totalVolume: params.totalVolume || '0.0 kg',
+    calories: '—',
+    prs: params.prs ? parseInt(params.prs, 10) : 0,
+    xpEarned: '+50 XP',
+  };
 
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [isPhotoMenuOpen, setIsPhotoMenuOpen] = useState(false);
@@ -125,13 +128,14 @@ export default function WorkoutSummaryScreen() {
     }, 100);
   };
 
-  // --- NOVA FUNÇÃO DE SALVAR E SAIR ---
+  // --- SALVAR E SAIR ---
+  // O treino já foi persistido de verdade no SQLite em ActiveWorkoutScreen.confirmFinish()
+  // antes de chegar nesta tela; aqui só mantemos a transição/loading visual de saída.
   const handleFinish = () => {
     if (isSaving) return; // Evita duplo clique
 
     setIsSaving(true);
 
-    // Simula uma chamada de API (Salvar no banco de dados)
     setTimeout(() => {
       setIsSaving(false);
 

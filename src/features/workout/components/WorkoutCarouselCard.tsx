@@ -15,6 +15,11 @@ export function WorkoutCarouselCard({ item, onPress }: Props) {
   const isToday = item.status === 'today';
   const isRest = item.status === 'rest';
   const workout = item.workout;
+  // `workout.id` é o identificador real da sessão no banco (usado pra carregar o treino ativo),
+  // não algo pra mostrar — o badge precisa só da letra da divisão (A/B/C). `letter` é o campo
+  // dedicado pra isso; o fallback via `title` ("Treino A" -> "A") cobre registros já gravados
+  // no banco antes desse campo existir.
+  const badgeLetter = workout?.letter ?? (typeof workout?.title === 'string' ? workout.title.trim().split(' ').pop() : undefined) ?? workout?.id;
 
   // Renderiza Card Vazio (Sem treino marcado e não é descanso oficial)
   if (!workout && !isRest) {
@@ -67,7 +72,7 @@ export function WorkoutCarouselCard({ item, onPress }: Props) {
               isToday ? { color: '#FFF' } : 
               item.status === 'completed' ? { color: '#008E00' } : 
               item.status === 'skipped' ? { color: '#EF4444' } : {}
-            ]}>{workout.id}</Text>
+            ]}>{badgeLetter}</Text>
           </View>
           <View>
             <Text style={styles.cardType}>{workout.type}</Text>

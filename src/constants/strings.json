@@ -36,10 +36,17 @@
     },
     "journey": {
       "title": "Sua Jornada de Sucesso",
-      "nextStep": "Próxima Evolução"
+      "nextStep": "Próxima Evolução",
+      "noRecord": "Sem registro",
+      "sameWorkout": "Mesmo treino"
     },
     "metrics": {
-      "weightLabel": "Peso Monitorado"
+      "weightLabel": "Peso Monitorado",
+      "weightEmpty": "Registrar",
+      "weightModalTitle": "Registrar Peso",
+      "weightModalLabel": "Peso atual (kg)",
+      "weightModalSave": "SALVAR PESO",
+      "weightModalError": "Informe um peso válido"
     }
   },
   "diet": {
@@ -77,11 +84,10 @@
         "addedAlert": "Adicionado"
       },
       "photo": {
-        "title": "Analisar Prato",
-        "label": "O que tem no prato?",
-        "placeholder": "Ex: Frango grelhado, salada de alface...",
-        "analyzeBtn": "ANALISAR COM IA",
-        "analyzing": "Identificando alimentos...",
+        "title": "Foto do Prato",
+        "notAvailableTitle": "Em breve!",
+        "notAvailableMsg": "Reconhecimento automático do prato ainda não está disponível. Por enquanto, adicione os itens manualmente.",
+        "manualCta": "ADICIONAR MANUALMENTE",
         "permissionTitle": "Permissão necessária",
         "permissionMsg": "Precisamos da câmera para fotografar seu prato."
       },
@@ -91,7 +97,10 @@
         "foundTitle": "Produto Encontrado!",
         "addIn": "Adicionar em:",
         "confirm": "ADICIONAR À DIETA",
-        "cancel": "Cancelar"
+        "cancel": "Cancelar",
+        "looking": "Procurando produto...",
+        "notFoundTitle": "Não encontramos esse produto",
+        "notFoundMsg": "Não encontramos esse produto na nossa base — que tal cadastrar manualmente?"
       },
       "creation": {
         "title": "O que deseja criar?",
@@ -109,43 +118,43 @@
         "yield": "renderam",
         "nameLabel": "Nome da Receita",
         "namePlaceholder": "Ex: Panqueca Fit...",
-        "descLabel": "Descrição (Opcional)",
-        "descPlaceholder": "Ex: Minha receita secreta...",
         "ingredientsLabel": "Ingredientes",
         "addIngredient": "Adicionar",
         "emptyIngredients": "Nenhum ingrediente adicionado",
-        "stepsLabel": "Modo de Preparo",
-        "stepsPlaceholder": "Ex: Misturar tudo...",
         "yieldLabel": "Rendimento (Porções)",
-        "success": "Receita criada!",
+        "success": "Receita criada! Agora é só ajustar a quantidade e adicionar na refeição.",
         "errorName": "Nome da receita obrigatório",
-        "errorIngredients": "Adicione ingredientes"
+        "errorIngredients": "Adicione pelo menos um ingrediente"
       },
       "customFood": {
         "title": "Novo Alimento",
         "nameLabel": "Nome",
         "namePlaceholder": "Ex: Tapioca...",
-        "kcalLabel": "Calorias (em 100g)",
-        "protLabel": "Prot (g)",
-        "carbLabel": "Carb (g)",
-        "fatLabel": "Gord (g)",
+        "kcalLabel": "Calorias (kcal/100g)",
+        "protLabel": "Proteína (g/100g)",
+        "carbLabel": "Carboidrato (g/100g)",
+        "fatLabel": "Gordura (g/100g)",
         "save": "SALVAR ALIMENTO",
-        "success": "Alimento criado!",
-        "errorName": "Nome obrigatório"
+        "success": "Alimento criado! Já aparece nas suas buscas.",
+        "errorName": "Nome obrigatório",
+        "errorKcal": "Informe as calorias por 100g"
       },
       "foodSearch": {
         "titleAdd": "Adicionar Alimento",
         "titleIngredient": "Ingrediente",
-        "placeholder": "Buscar...",
-        "homemade": "Receita Caseira"
+        "placeholder": "Buscar alimento...",
+        "kcalPer100": "kcal/100g",
+        "sourceCustom": "Personalizado",
+        "sourceScanned": "Escaneado",
+        "noResults": "Nenhum alimento encontrado.",
+        "searching": "Buscando..."
       },
       "quantity": {
-        "select": "Selecione a quantidade",
+        "gramsLabel": "Quantidade (g)",
         "update": "ATUALIZAR",
         "addIngredient": "ADD INGREDIENTE",
         "add": "ADICIONAR",
         "errorQty": "Quantidade inválida",
-        "errorUnit": "Selecione uma unidade",
         "errorMeal": "Nenhuma refeição selecionada."
       },
       "newMeal": {
@@ -168,21 +177,233 @@
       "delete": "Excluir",
       "error": "Erro",
       "success": "Sucesso",
-      "invalidFood": "Alimento inválido ou sem medidas cadastradas."
-    },
-    "food_names": {
-      "white_rice": "Arroz Branco",
-      "chicken_breast": "Peito de Frango",
-      "boiled_egg": "Ovo Cozido",
-      "whey_protein": "Whey Protein",
-      "protein_bar": "Barra de Proteína Power",
-      "ai_plate": "Prato Identificado (IA)"
+      "invalidFood": "Alimento inválido ou sem medidas cadastradas.",
+      "removeItemTitle": "Remover Item",
+      "removeItemMsg": "Deseja remover este alimento da refeição?"
     },
     "macros_short": {
       "kcal": "CALORIAS",
       "protein": "PROT",
       "carbs": "CARBO",
       "fat": "GORD"
+    }
+  },
+  "workout": {
+    "cardioModal": {
+      "title": "Registrar Esporte/Cardio",
+      "activityLabel": "Atividade",
+      "otherPlaceholder": "Descreva a atividade (Ex: Crossfit, Luta...)",
+      "durationLabel": "Duração (minutos)",
+      "distanceLabel": "Distância (km) — opcional",
+      "save": "SALVAR ATIVIDADE",
+      "errorActivity": "Escolha ou descreva a atividade.",
+      "errorDuration": "Informe a duração em minutos.",
+      "recentTitle": "Últimos registros",
+      "recentEmpty": "Nenhuma atividade registrada ainda."
+    },
+    "exerciseInfo": {
+      "photoAttribution": "Fotos: free-exercise-db (domínio público)",
+      "noMediaAvailable": "Sem demonstração visual disponível"
+    }
+  },
+  "achievements": {
+    "header": {
+      "title": "Conquistas"
+    },
+    "stats": {
+      "workouts": "Treinos",
+      "streak": "Streak Atual",
+      "badges": "Medalhas"
+    },
+    "sections": {
+      "badgesTitle": "Galeria de Medalhas",
+      "prTitle": "Recordes Pessoais (PRs)",
+      "seeMore": "Ver Mais",
+      "progressBadgesTitle": "Medalhas de Progresso",
+      "eventBadgesTitle": "Eventos Especiais",
+      "allBadgesTitle": "Todas as Conquistas",
+      "allPRsTitle": "Recordes Pessoais"
+    },
+    "empty": {
+      "noWorkoutsTitle": "Sua jornada começa aqui",
+      "noWorkoutsDesc": "Complete seu primeiro treino para começar a desbloquear medalhas de verdade.",
+      "noPRsTitle": "Nenhum recorde ainda",
+      "noPRsDesc": "Registre o peso das suas séries num treino para começar a colecionar recordes pessoais."
+    },
+    "modal": {
+      "unlocked": "CONQUISTADA",
+      "locked": "BLOQUEADA",
+      "close": "Fechar",
+      "eventTag": "EVENTO ESPECIAL",
+      "eventTagShort": "EVENTO",
+      "chartTitle": "Evolução de Carga",
+      "currentRecord": "Recorde Atual: {value}",
+      "progressLabel": "Progresso: {value}"
+    },
+    "progress": {
+      "streakDays": "{current}/{target} dias de streak",
+      "tons": "{current}/{target} toneladas",
+      "workoutsCount": "{current}/{target} treinos",
+      "locked": "Ainda não conquistada",
+      "unlockedLabel": "Conquistada"
+    },
+    "badges": {
+      "firstSteps": { "title": "Primeiros Passos", "desc": "Complete seu primeiro treino." },
+      "consistency": { "title": "Consistência", "desc": "Mantenha uma streak de 7 dias seguidos." },
+      "ironDiscipline": { "title": "Disciplina de Ferro", "desc": "Mantenha uma streak de 30 dias seguidos." },
+      "earlyBird": { "title": "Madrugador", "desc": "Complete um treino antes das 6h da manhã." },
+      "heavyWeight": { "title": "Peso Pesado", "desc": "Levante um total acumulado de 10 toneladas." },
+      "ironMarathon": { "title": "Maratona de Ferro", "desc": "Levante um total acumulado de 50 toneladas." },
+      "century": { "title": "Centena", "desc": "Complete 100 treinos." },
+      "recordHolder": { "title": "Recordista", "desc": "Registre seu primeiro recorde pessoal (PR)." },
+      "completeAthlete": { "title": "Atleta Completo", "desc": "Registre sua primeira atividade de esporte/cardio." },
+      "christmas": { "title": "Treino Natalino", "desc": "Complete um treino no dia 25 de Dezembro." },
+      "newYear": { "title": "Ano Novo, Vida Nova", "desc": "Treine todos os dias da primeira semana de Janeiro." }
+    },
+    "prCard": {
+      "new": "NOVO"
+    }
+  },
+  "profile": {
+    "screen": {
+      "loading": "Carregando perfil...",
+      "namePlaceholder": "Seu nome",
+      "bioPlaceholder": "Conte um pouco sobre você...",
+      "bioEmpty": "Toque em editar para contar sua história.",
+      "saveSuccessTitle": "Atualizado",
+      "saveSuccessMsg": "Seu perfil foi salvo com sucesso!",
+      "saveErrorTitle": "Não foi possível salvar",
+      "saveErrorMsg": "Algo deu errado ao salvar seu perfil. Confira os dados e tenta de novo.",
+      "notSet": "--",
+      "levelBeginner": "Nível Iniciante",
+      "levelIntermediate": "Nível Intermed.",
+      "levelAdvanced": "Nível Avançado",
+      "goalHypertrophy": "Hipertrofia",
+      "goalWeightLoss": "Emagrecimento",
+      "goalStrength": "Força Pura",
+      "coverPermissionTitle": "Permissão necessária",
+      "coverPermissionMsg": "Precisamos de acesso às fotos para trocar a capa.",
+      "nameLabel": "Nome",
+      "bioLabel": "Bio",
+      "editCoverCta": "Editar Capa",
+      "doneCta": "Concluir",
+      "measuresTitle": "Suas Medidas",
+      "weightFieldLabel": "PESO (KG)",
+      "heightFieldLabel": "ALTURA (M)",
+      "ageFieldLabel": "IDADE",
+      "goalLevelTitle": "Objetivo & Nível"
+    },
+    "drawer": {
+      "streakSuffix": "dias seguidos",
+      "noStreak": "Comece hoje seu streak",
+      "settingsTitle": "Em breve!",
+      "settingsMsg": "As configurações do app ainda estão a caminho.",
+      "subscriptionTitle": "Em breve!",
+      "subscriptionMsg": "Os planos Pro ainda estão a caminho. Fica de olho!",
+      "privacyTitle": "Em breve!",
+      "privacyMsg": "As configurações de privacidade ainda estão a caminho.",
+      "logoutTitle": "Em breve!",
+      "logoutMsg": "Ainda não dá pra sair — o FitPro roda localmente no seu aparelho, sem conta. Seus dados ficam salvos aqui mesmo."
+    }
+  },
+  "stats": {
+    "header": {
+      "title": "Estatísticas"
+    },
+    "tabs": {
+      "performance": "Performance",
+      "body": "Corpo",
+      "measures": "Medidas"
+    },
+    "performance": {
+      "muscleBalance": {
+        "title": "Equilíbrio Muscular",
+        "emptyTitle": "Ainda sem dados de treino",
+        "emptyText": "Complete um treino usando exercícios buscados do catálogo (em vez de digitados à mão) pra começar a ver seu equilíbrio muscular por grupo aqui.",
+        "insight": "Seu grupo de {group} está evoluindo mais devagar que os outros. Que tal priorizar ele no próximo treino?",
+        "balancedInsight": "Seus grupos musculares estão bem equilibrados. Continue assim! 💪"
+      },
+      "volume": {
+        "title": "Volume de Carga (kg)",
+        "emptyTitle": "Nenhum treino registrado ainda",
+        "emptyText": "Complete um treino pra ver seu volume de carga semanal aqui.",
+        "hint": "Toque nas barras para ver detalhes",
+        "unit": "kg",
+        "current": "Atual",
+        "deltaUp": "+{pct}% vs. semana anterior",
+        "deltaDown": "{pct}% vs. semana anterior"
+      },
+      "consistency": {
+        "title": "Consistência",
+        "legend": "Intenso",
+        "emptyFooter": "Complete treinos pra acompanhar sua consistência aqui.",
+        "summary": "Você treinou em {pct}% dos dias nos últimos 3 meses.",
+        "levels": {
+          "0": "Descanso",
+          "1": "Treino Leve",
+          "2": "Treino Médio",
+          "3": "Treino Intenso"
+        }
+      },
+      "info": {
+        "volumeTitle": "O que é Volume de Carga?",
+        "volumeText1": "Também conhecido como Tonelagem, é a soma total do peso levantado em todos os seus treinos da semana.",
+        "volumeFormula": "Séries × Repetições × Carga (kg)",
+        "volumeText2": "Aumentar esse número ao longo do tempo é um dos melhores indicadores de que você está aplicando a Sobrecarga Progressiva e ganhando força! 💪",
+        "consistencyTitle": "Sua Consistência",
+        "consistencyText1": "Este mapa mostra a frequência e intensidade dos seus treinos nos últimos 3 meses.",
+        "consistencyText2": "\"A constância vence a intensidade.\" Tente evitar espaços em branco no seu mapa!",
+        "gotIt": "Entendi"
+      }
+    },
+    "body": {
+      "title": "Evolução Corporal",
+      "currentWeight": "Peso Atual",
+      "emptyTitle": "Registre seu primeiro peso",
+      "emptyText": "Acompanhe sua evolução de peso e composição corporal ao longo do tempo.",
+      "cta": "Registrar Medição",
+      "advancedTitle": "Composição Corporal (toque para ver histórico)",
+      "toggleSimple": "Simples",
+      "toggleAdvanced": "Avançado",
+      "metrics": {
+        "weight_kg": "Peso",
+        "body_fat_pct": "Gordura",
+        "muscle_mass_kg": "Massa Magra",
+        "water_pct": "Água",
+        "bone_mass_kg": "Massa Óssea"
+      }
+    },
+    "measures": {
+      "title": "Proporções Corporais",
+      "emptyTitle": "Ainda sem medidas registradas",
+      "emptyText": "Registre suas circunferências pra acompanhar sua evolução corporal aqui.",
+      "addMeasurement": "Nova Medição",
+      "history": "Ver Histórico",
+      "measureNames": {
+        "biceps_cm": "Bíceps",
+        "chest_cm": "Peitoral",
+        "waist_cm": "Cintura",
+        "thigh_cm": "Coxa",
+        "calf_cm": "Panturrilha"
+      }
+    },
+    "modals": {
+      "newMeasurement": {
+        "title": "Nova Medição",
+        "valueLabel": "NOVO VALOR",
+        "save": "REGISTRAR"
+      },
+      "detail": {
+        "historyLabel": "Histórico de Evolução",
+        "empty": "Ainda não há histórico suficiente pra desenhar um gráfico.",
+        "close": "Fechar"
+      }
+    },
+    "share": {
+      "dialogTitle": "Compartilhar Estatísticas FitPro",
+      "appName": "FITPRO",
+      "title": "Estatísticas de Performance",
+      "hashtag": "#FitProApp"
     }
   }
 }

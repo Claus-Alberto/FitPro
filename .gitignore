@@ -42,3 +42,6 @@ yarn-error.*
 
 # tool-specific
 .sfdx/
+
+# Scratch/test files from AI-driven browser testing
+.scratch_test_screens/

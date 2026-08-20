@@ -32,7 +32,7 @@ export function ProgramHeader({ programName, week, totalWeeks, schedulingMode, o
           <View style={styles.weekBadge}>
             <Text style={styles.weekText}>Sem {week}/{totalWeeks}</Text>
           </View>
-          <TouchableOpacity onPress={onEditPress} style={styles.editButton}>
+          <TouchableOpacity onPress={onEditPress} style={styles.editButton} accessibilityLabel="Gerenciar fichas de treino" accessibilityRole="button">
             <MaterialCommunityIcons name="pencil" size={16} color="#FFF" />
           </TouchableOpacity>
         </View>

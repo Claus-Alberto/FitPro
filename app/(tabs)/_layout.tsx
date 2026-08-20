@@ -230,6 +230,15 @@ export default function TabLayout() {
       />
 
       <Tabs.Screen
+        name="workout/programs"
+        options={{
+          headerShown: false,
+          href: null,
+          tabBarStyle: { display: 'none' },
+        }}
+      />
+
+      <Tabs.Screen
         name="profile"
         options={{
           title: 'Perfil',

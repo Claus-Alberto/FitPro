@@ -1,8 +1,11 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
   Animated,
   Dimensions,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -10,89 +13,44 @@ import {
   View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-// Certifique-se de ter: npx expo install react-native-svg
 import { useRouter } from 'expo-router'; // <--- Importado
-import Svg, { Circle } from 'react-native-svg';
+import STRINGS from '../constants/strings.json';
+import { COLORS } from '../constants/theme';
 import { useProfileDrawer } from '../context/ProfileDrawerContext';
+import { resetUserData } from '../database/db';
+import { ProfileService } from '../features/profile/services/ProfileService';
+import { WorkoutService } from '../features/workout/services/WorkoutService';
 
 const { width, height } = Dimensions.get('window');
 
 // Largura do Drawer (85% da tela fica bom para mobile)
 const DRAWER_WIDTH = width * 0.85;
 
-// DADOS MOCKADOS DE XP E USUÁRIO
-const USER_XP = {
-  current: 2400,
-  next_level: 3000,
-  level: 12
-};
+const DRAWER_STRINGS = STRINGS.profile.drawer;
 
-const USER_DATA = {
-  name: 'Claus',
-  email: 'claus@fitpro.com',
-  streak: 12,
-  xp: { current: 2400, next: 3000, level: 12 }
-};
-
-// --- COMPONENTE: AVATAR COM CÍRCULO DE XP ---
-const AvatarWithXP = () => {
-  const size = 80; // Tamanho total
-  const strokeWidth = 4; // Grossura da barra
-  const radius = (size - strokeWidth) / 2;
-  const circumference = radius * 2 * Math.PI;
-  
-  // Cálculo da porcentagem (0 a 1)
-  const progress = USER_XP.current / USER_XP.next_level;
-  const strokeDashoffset = circumference - progress * circumference;
+// --- COMPONENTE: AVATAR SIMPLES (foto real, ou ícone genérico como fallback) ---
+const Avatar = ({ photoUri }: { photoUri: string | null }) => {
+  const size = 64;
 
   return (
-    <View style={{ width: size, height: size, justifyContent: 'center', alignItems: 'center' }}>
-      {/* O DESENHO DO CÍRCULO */}
-      <View style={{ position: 'absolute', transform: [{ rotate: '-90deg' }] }}>
-        <Svg width={size} height={size}>
-          {/* Círculo de Fundo (Cinza) */}
-          <Circle
-            stroke="#F3F4F6"
-            fill="none"
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            strokeWidth={strokeWidth}
-          />
-          {/* Círculo de Progresso (Verde) */}
-          <Circle
-            stroke="#008E00"
-            fill="none"
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            strokeWidth={strokeWidth}
-            strokeDasharray={`${circumference} ${circumference}`}
-            strokeDashoffset={strokeDashoffset}
-            strokeLinecap="round" // Ponta arredondada
-          />
-        </Svg>
-      </View>
-
-      {/* O AVATAR NO MEIO */}
-      <View style={styles.avatarInner}>
-        <MaterialCommunityIcons name="account" size={40} color="#FFF" />
-      </View>
-
-      {/* BADGE DE NÍVEL */}
-      <View style={styles.levelBadge}>
-        <Text style={styles.levelText}>{USER_XP.level}</Text>
-      </View>
+    <View style={{ width: size, height: size, justifyContent: 'center', alignItems: 'center', marginRight: 16 }}>
+      {photoUri ? (
+        <Image source={{ uri: photoUri }} style={styles.avatarPhoto} />
+      ) : (
+        <View style={styles.avatarInner}>
+          <MaterialCommunityIcons name="account" size={32} color="#FFF" />
+        </View>
+      )}
     </View>
   );
 };
 
 // --- COMPONENTE: ITEM DE MENU ---
-const MenuItem = ({ icon, label, badge, color = "#191511", onPress }: any) => (
+const MenuItem = ({ icon, label, badge, color = "#191511", onPress, customIcon }: any) => (
   <TouchableOpacity style={styles.menuItem} onPress={onPress}>
     <View style={styles.menuItemLeft}>
       <View style={[styles.iconBox, { backgroundColor: color === '#EF4444' ? '#FEF2F2' : '#F3F4F6' }]}>
-        <MaterialCommunityIcons name={icon} size={20} color={color} />
+        {customIcon || <MaterialCommunityIcons name={icon} size={20} color={color} />}
       </View>
       <Text style={[styles.menuText, { color }]}>{label}</Text>
     </View>
@@ -110,7 +68,63 @@ export default function ProfileSideDrawer() {
   const { isOpen, closeDrawer } = useProfileDrawer();
   const insets = useSafeAreaInsets();
   const router = useRouter(); // <--- Hook de navegação
-  
+  const [isResetting, setIsResetting] = useState(false);
+  const [displayName, setDisplayName] = useState('');
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [streak, setStreak] = useState(0);
+
+  // O drawer é montado fora da árvore de qualquer `Screen` (é irmão do `<Stack>` no layout raiz —
+  // veja app/_layout.tsx), então `useFocusEffect` não se aplica aqui. Recarrega os dados reais
+  // toda vez que o drawer abre, já que o perfil pode ter sido editado desde a última abertura.
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const [profile, currentStreak] = await Promise.all([
+          ProfileService.getProfile(),
+          WorkoutService.getCurrentStreak(),
+        ]);
+        if (cancelled) return;
+        setDisplayName(profile.name);
+        setPhotoUri(profile.photoUri);
+        setStreak(currentStreak);
+      } catch (e) {
+        console.warn('[ProfileSideDrawer] Erro ao carregar dados do usuário:', e);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isOpen]);
+
+  const handleResetData = () => {
+    if (isResetting) return;
+    Alert.alert(
+      'Resetar dados locais',
+      'Isso apaga fichas, treinos concluídos, refeições, água e alimentos personalizados salvos neste aparelho. Não dá pra desfazer. Continuar?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Resetar',
+          style: 'destructive',
+          onPress: async () => {
+            setIsResetting(true);
+            try {
+              await resetUserData();
+              closeDrawer();
+              router.replace('/(tabs)');
+              Alert.alert('Pronto', 'Dados locais resetados.');
+            } catch (e) {
+              console.warn('[ProfileSideDrawer] Erro ao resetar dados:', e);
+              Alert.alert('Erro', 'Não foi possível resetar os dados. Tenta de novo.');
+            } finally {
+              setIsResetting(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   // Animações
   const slideAnim = useRef(new Animated.Value(width)).current; // Começa fora da tela (direita)
   const fadeAnim = useRef(new Animated.Value(0)).current;      // Começa invisível
@@ -180,33 +194,29 @@ export default function ProfileSideDrawer() {
           
           {/* HEADER DO MENU */}
           <View style={styles.header}>
-              
-              {/* Componente do Avatar com Círculo de XP */}
-              <AvatarWithXP />
+
+              {/* Avatar real (foto do perfil, ou ícone genérico se não houver) */}
+              <Avatar photoUri={photoUri} />
 
               <View style={{ flex: 1, justifyContent: 'center' }}>
-                
+
                 {/* LINHA DO NOME + STREAK */}
                 <View style={styles.nameRow}>
-                  <Text style={styles.userName} numberOfLines={1}>{USER_DATA.name}</Text>
-                  
-                  <View style={styles.streakBadgeSmall}>
-                    <MaterialCommunityIcons name="fire" size={14} color="#F59E0B" />
-                    <Text style={styles.streakTextSmall}>{USER_DATA.streak}</Text>
-                  </View>
+                  <Text style={styles.userName} numberOfLines={1}>{displayName || STRINGS.profile.screen.namePlaceholder}</Text>
+
+                  {streak > 0 && (
+                    <View style={styles.streakBadgeSmall}>
+                      <MaterialCommunityIcons name="fire" size={14} color="#F59E0B" />
+                      <Text style={styles.streakTextSmall}>{streak}</Text>
+                    </View>
+                  )}
                 </View>
 
-                {/* Linha de XP (Abaixo do nome) */}
-                <View style={styles.xpRow}>
-                  <Text style={styles.xpText}>
-                    {USER_DATA.xp.current}/{USER_DATA.xp.next} XP
-                  </Text>
-                  <Text style={styles.xpLabel}>próx. nível</Text>
-                </View>
-
-                <Text style={styles.userEmail} numberOfLines={1}>{USER_DATA.email}</Text>
+                <Text style={styles.streakSubtitle}>
+                  {streak > 0 ? `${streak} ${DRAWER_STRINGS.streakSuffix}` : DRAWER_STRINGS.noStreak}
+                </Text>
               </View>
-              
+
               <TouchableOpacity onPress={closeDrawer} style={styles.closeBtn}>
                 <MaterialCommunityIcons name="close" size={24} color="#191511" />
               </TouchableOpacity>
@@ -235,13 +245,20 @@ export default function ProfileSideDrawer() {
             
             <View style={styles.dividerSmall} />
             
-            <MenuItem icon="cog-outline" label="Configurações" onPress={() => alert('Config')} />
-            <MenuItem icon="credit-card-outline" label="Assinatura Pro" badge="PRO" onPress={() => alert('Assinatura')} />
-            <MenuItem icon="shield-check-outline" label="Privacidade" onPress={() => alert('Privacidade')} />
-            
+            <MenuItem icon="cog-outline" label="Configurações" onPress={() => Alert.alert(DRAWER_STRINGS.settingsTitle, DRAWER_STRINGS.settingsMsg)} />
+            <MenuItem icon="credit-card-outline" label="Assinatura Pro" badge="PRO" onPress={() => Alert.alert(DRAWER_STRINGS.subscriptionTitle, DRAWER_STRINGS.subscriptionMsg)} />
+            <MenuItem icon="shield-check-outline" label="Privacidade" onPress={() => Alert.alert(DRAWER_STRINGS.privacyTitle, DRAWER_STRINGS.privacyMsg)} />
+            <MenuItem
+              icon={isResetting ? undefined : "database-remove-outline"}
+              label={isResetting ? "Resetando..." : "Resetar Dados Locais"}
+              color="#EF4444"
+              onPress={handleResetData}
+              customIcon={isResetting ? <ActivityIndicator size="small" color="#EF4444" /> : undefined}
+            />
+
             <View style={styles.dividerSmall} />
 
-            <MenuItem icon="logout" label="Sair do App" color="#EF4444" onPress={() => alert('Logout')} />
+            <MenuItem icon="logout" label="Sair do App" color={COLORS.secondary} onPress={() => Alert.alert(DRAWER_STRINGS.logoutTitle, DRAWER_STRINGS.logoutMsg)} />
           </ScrollView>
           
         </View>
@@ -289,13 +306,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 24,
-    gap: 16,
     marginTop: 10,
   },
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
     marginBottom: 4,
   },
   streakBadgeSmall: {
@@ -307,15 +322,16 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     borderWidth: 1,
     borderColor: '#FDBA74',
-    gap: 2,
+    marginLeft: 8,
   },
   streakTextSmall: {
     fontSize: 10,
     fontWeight: '800',
     color: '#F59E0B',
+    marginLeft: 2,
   },
-  
-  // ESTILOS DO AVATAR COM XP
+
+  // ESTILOS DO AVATAR
   avatarInner: {
     width: 64,
     height: 64,
@@ -324,20 +340,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  levelBadge: {
-    position: 'absolute',
-    bottom: -4,
-    backgroundColor: '#008E00',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-  },
-  levelText: {
-    color: '#FFF',
-    fontSize: 10,
-    fontWeight: '800',
+  avatarPhoto: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
   },
 
   userName: {
@@ -346,24 +352,14 @@ const styles = StyleSheet.create({
     color: '#191511',
     maxWidth: '70%',
   },
-  // Estilos da linha de XP
-  xpRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 2,
-  },
-  xpText: { fontSize: 12, fontWeight: '700', color: '#008E00' },
-  xpLabel: { fontSize: 10, color: '#9CA3AF' },
-
-  userEmail: { fontSize: 12, color: '#6B7280' },
+  streakSubtitle: { fontSize: 12, color: '#6B7280' },
   closeBtn: { padding: 8, backgroundColor: '#F3F4F6', borderRadius: 20, alignSelf: 'flex-start' },
   divider: { height: 1, backgroundColor: '#F3F4F6', marginBottom: 24 },
   dividerSmall: { height: 1, backgroundColor: '#F3F4F6', marginVertical: 12 },
-  
+
   menuItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, paddingVertical: 4 },
-  menuItemLeft: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  iconBox: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  menuItemLeft: { flexDirection: 'row', alignItems: 'center' },
+  iconBox: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginRight: 16 },
   menuText: { fontSize: 15, fontWeight: '600' },
   badge: { backgroundColor: '#008E00', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
   badgeText: { color: '#FFF', fontSize: 10, fontWeight: '800' }

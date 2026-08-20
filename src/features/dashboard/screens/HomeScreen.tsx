@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // Design System & Components
 import HistoryCalendarModal from "../../../../components/HistoryCalendarModal";
+import WaterModal from "../../../components/WaterModal";
 import { COLORS, SPACING } from "../../../constants/theme";
 import { DashboardActionGrid } from "../components/DashboardActionGrid";
 import { DashboardBentoBox } from "../components/DashboardBentoBox";
@@ -37,7 +38,8 @@ export default function DashboardScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
-  const { user, timeline, nutrition } = useDashboard();
+  const [isWaterModalOpen, setIsWaterModalOpen] = useState(false);
+  const { user, timeline, nutrition, water, waterGoal, addWater, setWaterGoal, refreshDashboard } = useDashboard();
 
   const startWorkout = () => {
     router.push("/workout/active");
@@ -56,13 +58,19 @@ export default function DashboardScreen() {
         contentContainerStyle={styles.scrollContent}
       >
         {/* HERO CARD: Visão Geral e Nutrição */}
-        <DashboardHeroCard streak={user.streak} nutrition={nutrition} />
+        <DashboardHeroCard
+          streak={user.streak}
+          nutrition={nutrition}
+          water={water}
+          waterGoal={waterGoal}
+          onOpenWater={() => setIsWaterModalOpen(true)}
+        />
 
-        {/* SOCIAL PROOF: Gatilho de Comunidade */}
-        <DashboardSocialProof />
+        {/* BENTO BOX: Métricas Corporais */}
+        <DashboardBentoBox weight={user.weight} onLogged={refreshDashboard} />
 
         {/* GRID DE AÇÃO: Rapidez e Facilidade */}
-        <DashboardActionGrid onStartWorkout={startWorkout} />
+        <DashboardActionGrid onStartWorkout={startWorkout} onOpenWater={() => setIsWaterModalOpen(true)} />
 
         {/* SEÇÃO JORNADA: Recompensas e Histórico */}
         <DashboardJourney
@@ -71,16 +79,24 @@ export default function DashboardScreen() {
           onSeeAll={() => setIsHistoryModalOpen(true)}
         />
 
-        {/* BENTO BOX: Métricas Corporais */}
-        <DashboardBentoBox weight={user.weight} />
+        {/* SOCIAL PROOF: Gatilho de Comunidade */}
+        <DashboardSocialProof />
 
         <View style={{ height: 40 }} />
       </ScrollView>
 
-      {/* MODAL REUTILIZÁVEL */}
+      {/* MODAIS REUTILIZÁVEIS */}
       <HistoryCalendarModal
         visible={isHistoryModalOpen}
         onClose={() => setIsHistoryModalOpen(false)}
+      />
+      <WaterModal
+        visible={isWaterModalOpen}
+        onClose={() => setIsWaterModalOpen(false)}
+        current={water}
+        goal={waterGoal}
+        onAdd={addWater}
+        onChangeGoal={setWaterGoal}
       />
     </View>
   );

@@ -7,6 +7,7 @@ export const COLORS = {
   primary: '#008E00', // Success / Primary Action
   secondary: '#191511', // Dark / Neutral
   accent: '#F59E0B', // Warning / Streaks
+  premium: '#8B5CF6', // Special/premium highlights (ex: badge "Peso Pesado")
 
   // Neutral Colors
   background: '#FAFAFA',
@@ -22,8 +23,12 @@ export const COLORS = {
   info: '#3B82F6',
   successLight: '#F0FDF4',
   warningLight: 'rgba(245, 158, 11, 0.15)',
-  
+  eventBg: '#FFFBEB', // Fundo da tag "Evento Especial" (badges sazonais)
+  eventBorder: '#FCD34D',
+  eventText: '#D97706',
+
   // Opacity variants
+  whiteOpacity10: 'rgba(255, 255, 255, 0.1)',
   whiteOpacity20: 'rgba(255, 255, 255, 0.2)',
   blackOpacity10: 'rgba(0, 0, 0, 0.1)',
 };

@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Dimensions,
     Modal,
@@ -11,19 +11,18 @@ import {
     View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { WorkoutService } from '../src/features/workout/services/WorkoutService';
 
 const { width } = Dimensions.get('window');
 
-// --- DADOS MOCKADOS (Centralizados aqui) ---
-const FULL_HISTORY: any = {
-  '2023-11-01': { id: '2023-11-01', status: 'done', title: 'Peito & Tríceps' },
-  '2023-11-02': { id: '2023-11-02', status: 'done', title: 'Costas & Bíceps' },
-  '2023-11-03': { id: '2023-11-03', status: 'missed', title: 'Pernas' },
-  '2023-11-04': { id: '2023-11-04', status: 'done', title: 'Ombros & Trapézio' },
-  '2023-11-06': { id: '2023-11-06', status: 'done', title: 'Peito & Tríceps' },
-  '2023-11-24': { id: '2023-11-24', status: 'done', title: 'Peito & Tríceps' },
-  '2023-11-25': { id: '2023-11-25', status: 'missed', title: 'Cardio' },
-  '2023-11-26': { id: '2023-11-26', status: 'today', title: 'Dorsal & Bíceps' },
+const MONTH_NAMES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+/** @description Mapeia o status real gravado no WorkoutV3 (completed/skipped/today/future) para o estilo done/missed/today usado neste calendário. */
+const toCalendarStatus = (status: string) => {
+  if (status === 'completed') return 'done';
+  if (status === 'skipped') return 'missed';
+  if (status === 'today') return 'today';
+  return null;
 };
 
 interface Props {
@@ -35,19 +34,30 @@ export default function HistoryCalendarModal({ visible, onClose }: Props) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [selectedDateInfo, setSelectedDateInfo] = useState<any>(null);
+  const [monthHistory, setMonthHistory] = useState<Record<string, { status: string; title: string }>>({});
+
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth() + 1; // 1-12
+
+  useEffect(() => {
+    if (!visible) return;
+    WorkoutService.getMonthHistory(year, month).then(setMonthHistory).catch(() => setMonthHistory({}));
+  }, [visible]);
 
   const renderCalendarDays = () => {
     const days = [];
-    const startOffset = 3; 
-    const totalDays = 30;
+    const firstWeekday = new Date(year, month - 1, 1).getDay(); // 0 (dom) a 6 (sáb)
+    const totalDays = new Date(year, month, 0).getDate();
 
-    for (let i = 0; i < startOffset; i++) {
+    for (let i = 0; i < firstWeekday; i++) {
       days.push({ id: `empty-${i}`, type: 'empty' });
     }
     for (let i = 1; i <= totalDays; i++) {
       const dayStr = i < 10 ? `0${i}` : `${i}`;
-      const fullDate = `2023-11-${dayStr}`;
-      const historyItem = FULL_HISTORY[fullDate];
+      const fullDate = `${year}-${String(month).padStart(2, '0')}-${dayStr}`;
+      const real = monthHistory[fullDate];
+      const historyItem = real ? { id: fullDate, status: toCalendarStatus(real.status), title: real.title } : undefined;
       days.push({ id: fullDate, day: i, type: 'day', data: historyItem });
     }
     return days;
@@ -61,7 +71,7 @@ export default function HistoryCalendarModal({ visible, onClose }: Props) {
         <View style={[styles.calendarModalContent, { paddingBottom: insets.bottom + 20 }]}>
           {/* HEADER */}
           <View style={styles.calendarHeader}>
-            <Text style={styles.calendarMonthTitle}>Novembro 2025</Text>
+            <Text style={styles.calendarMonthTitle}>{MONTH_NAMES[month - 1]} {year}</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeIconBg}>
               <MaterialCommunityIcons name="close" size={24} color="#191511" />
             </TouchableOpacity>
@@ -106,15 +116,15 @@ export default function HistoryCalendarModal({ visible, onClose }: Props) {
               <View style={styles.selectedDayCard}>
                 {selectedDateInfo ? (
                   <>
-                    <Text style={styles.selectedDayTitle}>Dia {selectedDateInfo.day} de Novembro</Text>
+                    <Text style={styles.selectedDayTitle}>Dia {selectedDateInfo.day} de {MONTH_NAMES[month - 1]}</Text>
                     <View style={styles.selectedDayRow}>
                         <View style={[styles.statusDot, { backgroundColor: selectedDateInfo.status === 'done' ? '#008E00' : selectedDateInfo.status === 'missed' ? '#EF4444' : '#9CA3AF' }]} />
                         <Text style={styles.selectedDayWorkout}>{selectedDateInfo.title || "Sem registro"}</Text>
                     </View>
                     {selectedDateInfo.status === 'done' && (
-                      <TouchableOpacity style={styles.viewDetailsBtn} onPress={() => { 
-                        onClose(); 
-                        router.push({ pathname: '/workout/details', params: { id: selectedDateInfo.id, date: `Dia ${selectedDateInfo.day} de Novembro` } }); 
+                      <TouchableOpacity style={styles.viewDetailsBtn} onPress={() => {
+                        onClose();
+                        router.push({ pathname: '/workout/details', params: { date: selectedDateInfo.id } });
                       }}>
                         <Text style={styles.viewDetailsText}>Ver Detalhes do Treino</Text>
                         <MaterialCommunityIcons name="arrow-right" size={16} color="#FFF" />

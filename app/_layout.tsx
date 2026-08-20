@@ -17,6 +17,7 @@ import { ProfileDrawerProvider } from '../src/context/ProfileDrawerContext';
 
 // --- DATABASE IMPORTS ---
 import { initLocalDatabase } from '../src/database/db';
+import { DietService } from '../src/features/diet/services/DietService';
 import { WorkoutService } from '../src/features/workout/services/WorkoutService';
 
 export {
@@ -48,6 +49,8 @@ export default function RootLayout() {
       try {
         await initLocalDatabase();
         await WorkoutService.seedInitialData();
+        await WorkoutService.seedExerciseLibrary();
+        await DietService.seedFoodDatabase();
       } catch (e) {
         console.warn('Erro fatal banco local:', e);
       } finally {

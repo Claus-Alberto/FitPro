@@ -1,7 +1,8 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Dimensions,
   FlatList,
   Image,
@@ -16,56 +17,36 @@ import {
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Line, Polyline, Text as SvgText } from 'react-native-svg';
+import { WorkoutService } from '../services/WorkoutService';
 
 const { width, height } = Dimensions.get('window');
 
-// --- BANCO DE DADOS MOCKADO (Vários treinos) ---
-const WORKOUT_DATABASE: any = {
-    // Chave = ID ou Data (ex: '2023-11-26')
-    'default': {
-        title: "Costas, Bíceps & Trapézio",
-        date: "Segunda, 24 Nov • 18:30",
-        duration: "58 min",
-        total_volume: "8.4 ton",
-        calories: "480 kcal",
-        mood: "strong",
-        hero_image: "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-        user_photos: [
-            "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80", 
-            "https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80", 
-        ],
-        exercises: [
-            {
-                id: 1, name: "Puxada Alta (Polia)", muscle: "Costas", exercise_kcal: 85,
-                history: [{ date: '10/Nov', weight: 40 }, { date: '17/Nov', weight: 42 }, { date: '24/Nov', weight: 45 }, { date: 'Prev', weight: 48 }],
-                sets: [{ id: 1, weight: "45kg", reps: 12, rpe: 7, rest: "60s" }, { id: 2, weight: "50kg", reps: 10, rpe: 8, rest: "60s" }, { id: 3, weight: "55kg", reps: 8, rpe: 9, rest: "90s", pr: true }]
-            },
-            {
-                id: 2, name: "Rosca Scott", muscle: "Bíceps", exercise_kcal: 78,
-                history: [{ date: '10/Nov', weight: 17 }, { date: '17/Nov', weight: 20 }, { date: '24/Nov', weight: 25 }],
-                sets: [{ id: 1, weight: "25kg", reps: 12, rpe: 7, rest: "60s" }, { id: 2, weight: "30kg", reps: 8, rpe: 9, rest: "90s", pr: true }]
-            }
-        ]
-    },
-    // Exemplo de outro treino para testar a rota dinâmica
-    '2023-11-25': {
-        title: "Pernas (Foco Quadríceps)",
-        date: "Domingo, 25 Nov • 10:00",
-        duration: "1h 10m",
-        total_volume: "12.5 ton",
-        calories: "620 kcal",
-        mood: "tired",
-        hero_image: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?ixlib=rb-4.0.3&w=800&q=80",
-        user_photos: [], // Sem fotos nesse dia
-        exercises: [
-            {
-                id: 1, name: "Agachamento Livre", muscle: "Pernas", exercise_kcal: 120,
-                history: [{ date: '18/Nov', weight: 80 }, { date: '25/Nov', weight: 85 }],
-                sets: [{ id: 1, weight: "80kg", reps: 10, rest: "90s" }, { id: 2, weight: "85kg", reps: 8, rest: "120s" }]
-            }
-        ]
-    }
-};
+const DEFAULT_HERO_IMAGE = "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80";
+
+/**
+ * @description Converte o WorkoutLog real (SQLite, via WorkoutService.getWorkoutLogByDate/ById)
+ * para o formato que esta tela renderiza. Substitui o antigo WORKOUT_DATABASE fixo.
+ * `rpe`, `rest` e `exercise_kcal` não são coletados hoje no treino ativo, então ficam com
+ * valores neutros até existir uma fonte real para eles.
+ */
+const adaptLogToViewModel = (log: any) => ({
+  title: log.title,
+  date: log.date,
+  duration: log.duration,
+  total_volume: log.total_volume,
+  calories: '—',
+  mood: 'strong',
+  hero_image: DEFAULT_HERO_IMAGE,
+  user_photos: log.photos || [],
+  exercises: log.exercises.map((ex: any, i: number) => ({
+    id: i + 1,
+    name: ex.name,
+    muscle: '',
+    exercise_kcal: null,
+    history: ex.sets.map((s: any, si: number) => ({ date: `Série ${si + 1}`, weight: s.weight || 0 })),
+    sets: ex.sets.map((s: any) => ({ id: s.id, weight: `${s.weight}kg`, reps: s.reps, rest: '—' })),
+  })),
+});
 
 // COMPONENTE DE GRÁFICO (Mantido igual)
 const ProgressChart = ({ data }: { data: { date: string, weight: number }[] }) => {
@@ -102,11 +83,25 @@ const ProgressChart = ({ data }: { data: { date: string, weight: number }[] }) =
 export default function WorkoutDetailScreen() {
     const insets = useSafeAreaInsets();
     const router = useRouter();
-    const params = useLocalSearchParams();
+    const params = useLocalSearchParams<{ date?: string }>();
 
-    // LÓGICA DINÂMICA: Pega o ID da rota ou usa o default
-    const workoutId = Array.isArray(params.id) ? params.id[0] : params.id;
-    const currentWorkout = WORKOUT_DATABASE[workoutId || ''] || WORKOUT_DATABASE['default'];
+    const [currentWorkout, setCurrentWorkout] = useState<any | null>(null);
+    const [isLoadingLog, setIsLoadingLog] = useState(true);
+
+    useEffect(() => {
+        let cancelled = false;
+        const load = async () => {
+            setIsLoadingLog(true);
+            const date = Array.isArray(params.date) ? params.date[0] : params.date;
+            const log = date ? await WorkoutService.getWorkoutLogByDate(date) : null;
+            if (!cancelled) {
+                setCurrentWorkout(log ? adaptLogToViewModel(log) : null);
+                setIsLoadingLog(false);
+            }
+        };
+        load();
+        return () => { cancelled = true; };
+    }, [params.date]);
 
     const [isGalleryOpen, setIsGalleryOpen] = useState(false);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -120,18 +115,18 @@ export default function WorkoutDetailScreen() {
 
     // TRUQUE DO CARROSSEL INFINITO (Adaptado para usar dados dinâmicos)
     const infinitePhotos = useMemo(() => {
-        if (!currentWorkout.user_photos || currentWorkout.user_photos.length === 0) return [];
-        const LOOP_COUNT = 100; 
+        if (!currentWorkout?.user_photos || currentWorkout.user_photos.length === 0) return [];
+        const LOOP_COUNT = 100;
         return Array(LOOP_COUNT).fill(currentWorkout.user_photos).flat();
     }, [currentWorkout]);
 
     const initialScrollIndex = useMemo(() => {
-        if (!currentWorkout.user_photos || currentWorkout.user_photos.length === 0) return 0;
+        if (!currentWorkout?.user_photos || currentWorkout.user_photos.length === 0) return 0;
         return (currentWorkout.user_photos.length * 100) / 2;
     }, [currentWorkout]);
 
     const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
-        if (viewableItems.length > 0 && currentWorkout.user_photos.length > 0) {
+        if (viewableItems.length > 0 && currentWorkout?.user_photos?.length > 0) {
             const realIndex = viewableItems[0].index % currentWorkout.user_photos.length;
             setCurrentImageIndex(realIndex);
         }
@@ -142,6 +137,25 @@ export default function WorkoutDetailScreen() {
             <Image source={{ uri: item }} style={styles.modalPhoto} />
         </View>
     );
+
+    if (isLoadingLog || !currentWorkout) {
+        return (
+            <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+                <Stack.Screen options={{ headerShown: false }} />
+                {isLoadingLog ? (
+                    <ActivityIndicator size="large" color="#008E00" />
+                ) : (
+                    <>
+                        <MaterialCommunityIcons name="calendar-remove" size={40} color="#9CA3AF" style={{ marginBottom: 12 }} />
+                        <Text style={{ color: '#6B7280', fontWeight: '600', marginBottom: 20 }}>Nenhum treino registrado nessa data.</Text>
+                        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                            <MaterialCommunityIcons name="arrow-left" size={24} color="#191511" />
+                        </TouchableOpacity>
+                    </>
+                )}
+            </View>
+        );
+    }
 
     return (
         <View style={styles.container}>

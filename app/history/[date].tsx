@@ -1,59 +1,68 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import React from 'react';
-import { Dimensions, Image, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Dimensions, Image, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { WorkoutService } from '../../src/features/workout/services/WorkoutService';
 
 const { width } = Dimensions.get('window');
 
-// --- DADOS MOCKADOS DE UM TREINO PASSADO ---
-// Na vida real, você buscaria isso do seu banco usando o ID da data
-const HISTORY_DETAIL = {
-  date: '26 Nov, 2025',
-  weekday: 'Quarta-feira',
-  title: 'Costas & Bíceps (Hypertrophy)',
-  duration: '1h 15m',
-  totalLoad: '4.2 Ton',
-  mood: 'fire', // fire, tired, strong
-  
-  // As fotos que ele tirou no "Pump Check"
-  photos: [
-    "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?ixlib=rb-4.0.3&w=800&q=80", // Costas
-    "https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?ixlib=rb-4.0.3&w=800&q=80", // Bíceps
-  ],
-
-  exercises: [
-    {
-      name: "Puxada Alta (Polia)",
-      sets: [
-        { weight: 45, reps: 12, completed: true },
-        { weight: 50, reps: 10, completed: true },
-        { weight: 55, reps: 8, completed: true }, // PR
-      ]
-    },
-    {
-      name: "Remada Curvada",
-      sets: [
-        { weight: 60, reps: 10, completed: true },
-        { weight: 60, reps: 10, completed: true },
-        { weight: 65, reps: 8, completed: true },
-      ]
-    },
-    {
-      name: "Rosca Direta",
-      sets: [
-        { weight: 12, reps: 15, completed: true },
-        { weight: 14, reps: 12, completed: true },
-        { weight: 16, reps: 10, completed: false }, // Falhou
-      ]
-    }
-  ]
-};
+/**
+ * @description Adapta o WorkoutLog real (SQLite) para o formato que esta tela renderiza.
+ * Substitui o HISTORY_DETAIL fixo que existia antes (ignorava completamente o parâmetro [date]).
+ */
+const adaptLog = (log: any) => ({
+  date: log.date,
+  title: log.title,
+  duration: log.duration,
+  totalLoad: log.total_volume,
+  mood: 'fire',
+  photos: log.photos || [],
+  exercises: log.exercises.map((ex: any) => ({
+    name: ex.name,
+    sets: ex.sets.map((s: any) => ({ weight: s.weight, reps: s.reps, completed: s.completed })),
+  })),
+});
 
 export default function HistoryDetailScreen() {
-  const { date } = useLocalSearchParams(); // Pega a data da URL
+  const { date } = useLocalSearchParams<{ date?: string }>(); // Pega a data da URL
   const router = useRouter();
   const insets = useSafeAreaInsets();
+
+  const [HISTORY_DETAIL, setHistoryDetail] = useState<any | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    const isoDate = Array.isArray(date) ? date[0] : date;
+    setIsLoading(true);
+    (isoDate ? WorkoutService.getWorkoutLogByDate(isoDate) : Promise.resolve(null)).then(log => {
+      if (!cancelled) {
+        setHistoryDetail(log ? adaptLog(log) : null);
+        setIsLoading(false);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [date]);
+
+  if (isLoading || !HISTORY_DETAIL) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Stack.Screen options={{ headerShown: false }} />
+        {isLoading ? (
+          <ActivityIndicator size="large" color="#008E00" />
+        ) : (
+          <>
+            <MaterialCommunityIcons name="calendar-remove" size={40} color="#9CA3AF" style={{ marginBottom: 12 }} />
+            <Text style={{ color: '#6B7280', fontWeight: '600', marginBottom: 20 }}>Nenhum treino registrado nessa data.</Text>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+              <MaterialCommunityIcons name="arrow-left" size={24} color="#191511" />
+            </TouchableOpacity>
+          </>
+        )}
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -76,7 +85,7 @@ export default function HistoryDetailScreen() {
         
         {/* GALERIA DE FOTOS (THE VAULT) */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.galleryContainer}>
-          {HISTORY_DETAIL.photos.map((photo, index) => (
+          {HISTORY_DETAIL.photos.map((photo: string, index: number) => (
             <View key={index} style={styles.photoCard}>
               <Image source={{ uri: photo }} style={styles.photoImage} />
               <View style={styles.photoBadge}>
@@ -120,7 +129,7 @@ export default function HistoryDetailScreen() {
 
         {/* LISTA DE EXERCÍCIOS (LOG) */}
         <View style={styles.logContainer}>
-          {HISTORY_DETAIL.exercises.map((ex, i) => (
+          {HISTORY_DETAIL.exercises.map((ex: any, i: number) => (
             <View key={i} style={styles.exerciseCard}>
               <View style={styles.exerciseHeader}>
                 <Text style={styles.exerciseName}>{ex.name}</Text>
@@ -133,7 +142,7 @@ export default function HistoryDetailScreen() {
                   <Text style={styles.colLabel}>KG</Text>
                   <Text style={styles.colLabel}>REPS</Text>
                 </View>
-                {ex.sets.map((set, k) => (
+                {ex.sets.map((set: any, k: number) => (
                   <View key={k} style={[styles.setRow, !set.completed && { opacity: 0.5 }]}>
                     <View style={styles.setBadge}>
                       <Text style={styles.setText}>{k + 1}</Text>

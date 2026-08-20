@@ -18,6 +18,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import HistoryCalendarModal from '../../../../components/HistoryCalendarModal';
 import { ExtraActivityCard } from '../../../../components/workout/home/ExtraActivityCard';
 import { WeeklyTimeline } from '../../../../components/workout/home/WeeklyTimeline';
+import { CardioLogModal } from '../components/CardioLogModal';
 import { ProgramHeader } from '../components/ProgramHeader';
 import { RecoverModal } from '../components/RecoverModal';
 import { WorkoutCarouselCard } from '../components/WorkoutCarouselCard';
@@ -47,6 +48,7 @@ export default function WorkoutScreen() {
     setIsHistoryModalOpen,
     updateWorkoutStatus
   } = useWorkout();
+  const [isCardioModalOpen, setIsCardioModalOpen] = useState(false);
 
   const handleDayPress = (index: number) => {
     setSelectedIndex(index);
@@ -59,9 +61,11 @@ export default function WorkoutScreen() {
 
   const handleCardPress = (item: any) => {
     if (item.status === 'completed') {
-      router.push({ pathname: '/workout/details', params: { id: 'default', date: `Dia ${item.date}` } });
+      // item.id é a data ISO (YYYY-MM-DD); a tela de detalhes busca o WorkoutLog real por essa data.
+      router.push({ pathname: '/workout/details', params: { date: item.id } });
     } else if (item.status === 'today') {
-      router.push('/workout/active');
+      // item.id é a data ISO de hoje; item.workout.id é o id da sessão (Treino A/B/C) resolvida.
+      router.push({ pathname: '/workout/active', params: { date: item.id, sessionId: item.workout?.id } });
     } else if (item.status === 'skipped') {
       setSelectedSkippedWorkout(item);
     } else {
@@ -90,7 +94,7 @@ export default function WorkoutScreen() {
               totalWeeks={program.total_weeks} 
               schedulingMode={schedulingMode}
               onToggleMode={toggleSchedulingMode}
-              onEditPress={() => router.push('/(tabs)/workout/create')}
+              onEditPress={() => router.push('/(tabs)/workout/programs')}
             />
           ) : (
             <TouchableOpacity 
@@ -113,7 +117,7 @@ export default function WorkoutScreen() {
           onCalendarPress={() => setIsHistoryModalOpen(true)}
         />
 
-        <ExtraActivityCard onPress={() => alert('Modal Esporte')} />
+        <ExtraActivityCard onPress={() => setIsCardioModalOpen(true)} />
 
         <View style={styles.carouselSection}>
           <View style={styles.carouselHeader}><Text style={styles.sectionTitle}>Agenda de Treinos</Text></View>
@@ -152,6 +156,17 @@ export default function WorkoutScreen() {
       <HistoryCalendarModal
         visible={isHistoryModalOpen}
         onClose={() => setIsHistoryModalOpen(false)}
+      />
+
+      <CardioLogModal
+        visible={isCardioModalOpen}
+        onClose={() => setIsCardioModalOpen(false)}
+        onSaved={() => {
+          // Sem Alert bloqueante de sucesso — fecha o modal direto, mesmo padrão do
+          // `WeightLogModal` (o registro recente já reaparece na lista do próprio modal
+          // na próxima abertura, servindo como confirmação visual).
+          setIsCardioModalOpen(false);
+        }}
       />
     </View>
   );

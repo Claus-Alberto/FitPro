@@ -309,6 +309,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
+    minWidth: 0, // RN Web: sem isso o <input> nativo mantém sua largura intrínseca (~20 chars) e transborda/sobrepõe os campos vizinhos no layout flex
     fontSize: 18,
     fontWeight: '600',
     color: '#191511',

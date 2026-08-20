@@ -1,7 +1,8 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { MacroBar } from "../../../components/MacroBar";
+import ProgressRing from "../../../components/ProgressRing";
 import STRINGS from "../../../constants/strings.json";
 import { COLORS, SHADOWS, SPACING, TYPOGRAPHY } from "../../../constants/theme";
 
@@ -9,6 +10,7 @@ interface DashboardHeroCardProps {
   streak: number;
   nutrition: {
     caloriesRemaining: number;
+    progress: number;
     macros: {
       label: string;
       current: number;
@@ -16,15 +18,29 @@ interface DashboardHeroCardProps {
       color: string;
     }[];
   };
+  water: number;
+  waterGoal: number;
+  onOpenWater: () => void;
 }
 
 /**
- * @description Hero Card component displaying daily overview, streak, and nutrition macros.
+ * @description Hero Card component displaying daily overview, streak, nutrition macros, and a
+ * water-intake ring nested over the calorie ring — both are real animated progress arcs, not
+ * decorative borders.
  * @param {number} streak - The user's current consecutive login/workout streak.
- * @param {object} nutrition - Object containing remaining calories and macro nutrients data.
+ * @param {object} nutrition - Remaining calories, 0-1 progress toward the goal, and macro data.
+ * @param {number} water - Today's water intake in ml.
+ * @param {number} waterGoal - Today's water goal in ml.
+ * @param {function} onOpenWater - Opens the water-logging modal (tapping the mini ring or the FAB).
  * @returns {JSX.Element} The rendered Hero Card component.
  */
-export const DashboardHeroCard = ({ streak, nutrition }: DashboardHeroCardProps) => {
+export const DashboardHeroCard = ({
+  streak,
+  nutrition,
+  water,
+  waterGoal,
+  onOpenWater,
+}: DashboardHeroCardProps) => {
   return (
     <View style={styles.heroCard}>
       <View style={styles.heroHeader}>
@@ -37,9 +53,46 @@ export const DashboardHeroCard = ({ streak, nutrition }: DashboardHeroCardProps)
         </View>
       </View>
       <View style={styles.macroContainer}>
-        <View style={styles.calorieCircle}>
-          <Text style={styles.calNumber}>{nutrition.caloriesRemaining}</Text>
-          <Text style={styles.calLabel}>{STRINGS.dashboard.hero.calLabel}</Text>
+        <View style={styles.ringStack}>
+          <ProgressRing
+            size={100}
+            strokeWidth={8}
+            progress={nutrition.progress}
+            color={COLORS.primary}
+            trackColor={COLORS.whiteOpacity10}
+          >
+            <View style={{ alignItems: "center" }}>
+              <Text
+                style={styles.calNumber}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+              >
+                {nutrition.caloriesRemaining}
+              </Text>
+              <Text style={styles.calLabel}>
+                {STRINGS.dashboard.hero.calLabel}
+              </Text>
+            </View>
+          </ProgressRing>
+          <TouchableOpacity
+            style={styles.waterRingWrap}
+            onPress={onOpenWater}
+            activeOpacity={0.85}
+          >
+            <ProgressRing
+              size={38}
+              strokeWidth={4}
+              progress={waterGoal > 0 ? water / waterGoal : 0}
+              color={COLORS.info}
+              trackColor={COLORS.whiteOpacity10}
+            >
+              <MaterialCommunityIcons
+                name="water"
+                size={14}
+                color={COLORS.info}
+              />
+            </ProgressRing>
+          </TouchableOpacity>
         </View>
         <View style={styles.macroBars}>
           {nutrition.macros.map((macro, idx) => (
@@ -83,7 +136,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
-    gap: 4,
     borderWidth: 1,
     borderColor: "rgba(245, 158, 11, 0.3)",
   },
@@ -91,25 +143,31 @@ const styles = StyleSheet.create({
     color: COLORS.accent,
     fontSize: 14,
     fontWeight: "800",
+    marginLeft: 4,
   },
   macroContainer: {
     flexDirection: "row",
     alignItems: "center",
   },
-  calorieCircle: {
+  ringStack: {
     width: 100,
     height: 100,
-    borderRadius: 50,
-    borderWidth: 6,
-    borderColor: COLORS.primary,
-    justifyContent: "center",
-    alignItems: "center",
     marginRight: 20,
+  },
+  waterRingWrap: {
+    position: "absolute",
+    bottom: -12,
+    right: -10,
+    backgroundColor: COLORS.secondary,
+    borderRadius: 999,
+    padding: 3,
   },
   calNumber: {
     color: COLORS.white,
     fontSize: 22,
     fontWeight: "800",
+    maxWidth: 68,
+    textAlign: "center",
   },
   calLabel: {
     color: COLORS.gray400,
