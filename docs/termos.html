@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Termos de Uso — FitPro</title>
+<style>
+  :root { color-scheme: light; }
+  body {
+    margin: 0; padding: 0; background: #F9FAFB; color: #191511;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 48px 24px 96px; }
+  header { margin-bottom: 32px; }
+  .brand { font-size: 14px; font-weight: 800; letter-spacing: 1px; color: #008E00; text-transform: uppercase; margin-bottom: 8px; }
+  h1 { font-size: 28px; font-weight: 800; margin: 0 0 8px; }
+  .updated { font-size: 13px; color: #6B7280; }
+  .card { background: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 20px; padding: 32px; }
+  .section-title { font-size: 15px; font-weight: 800; color: #191511; margin: 28px 0 8px; }
+  .section-title:first-child { margin-top: 0; }
+  p { font-size: 15px; color: #374151; margin: 0 0 4px; white-space: pre-wrap; }
+  footer { margin-top: 32px; font-size: 13px; color: #9CA3AF; text-align: center; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">FitPro</div>
+      <h1>Termos de Uso</h1>
+      <div class="updated">Última atualização: 20 de agosto de 2026</div>
+    </header>
+    <div class="card" id="content"></div>
+    <footer>FitPro — este documento também está disponível dentro do App, em Configurações → Privacidade.</footer>
+  </div>
+
+  <script>
+    const raw = `1. ACEITAÇÃO DOS TERMOS
+
+Ao instalar, acessar ou usar o FitPro ("App", "Serviço"), você concorda integralmente com estes Termos de Uso. Se você não concorda com qualquer parte destes termos, não use o App. O uso continuado do App após qualquer alteração destes termos constitui aceitação das mudanças.
+
+2. DESCRIÇÃO DO SERVIÇO
+
+O FitPro é um aplicativo de acompanhamento de treinos, nutrição e evolução física, com armazenamento de dados local-first (os dados ficam salvos no próprio aparelho do usuário). O App é fornecido "como está" e "conforme disponível", sem qualquer garantia de funcionamento ininterrupto, livre de erros, ou adequado a uma finalidade específica.
+
+3. NÃO É ACONSELHAMENTO MÉDICO OU NUTRICIONAL
+
+O conteúdo do App — incluindo sugestões de treino, cálculos de calorias, macronutrientes, recordes pessoais, catálogo de exercícios e qualquer outra informação — tem caráter exclusivamente informativo e não substitui orientação de profissionais de educação física, nutrição ou saúde. Consulte um profissional qualificado antes de iniciar qualquer programa de exercícios ou dieta. O uso do App para fins de treino físico é por conta e risco exclusivo do usuário. O desenvolvedor não se responsabiliza por lesões, agravos à saúde, ou quaisquer consequências físicas decorrentes do uso das informações e funcionalidades do App.
+
+4. CONTA E USO LOCAL
+
+O FitPro não exige criação de conta com servidor próprio para suas funcionalidades principais. Os dados inseridos pelo usuário (fichas de treino, refeições, medidas corporais, fotos de progresso, entre outros) são armazenados localmente no dispositivo do usuário. É responsabilidade exclusiva do usuário realizar backups desses dados; o desenvolvedor não se responsabiliza por perda de dados decorrente de desinstalação do App, troca/perda/dano do aparelho, falha de armazenamento, ou qualquer outro motivo.
+
+5. LICENÇA DE USO
+
+Concedemos ao usuário uma licença pessoal, não exclusiva, intransferível e revogável para usar o App conforme estes Termos. É vedado: (a) realizar engenharia reversa, descompilar ou tentar extrair o código-fonte do App, exceto quando expressamente permitido por lei; (b) usar o App para fins ilegais ou não autorizados; (c) revender, sublicenciar ou distribuir o App sem autorização expressa.
+
+6. CONTEÚDO DE TERCEIROS
+
+O App utiliza, sob as respectivas licenças, bases de dados públicas de terceiros para seu catálogo de exercícios e alimentos (incluindo, mas não se limitando a, conjuntos de dados de domínio público e bases nutricionais públicas), além de consultar, quando aplicável, serviços públicos de terceiros (como bases de produtos por código de barras) para funcionalidades específicas. O desenvolvedor não garante a exatidão, completude ou atualidade dessas informações de terceiros e não se responsabiliza por elas.
+
+7. PROPRIEDADE INTELECTUAL
+
+O código, design, identidade visual, textos originais e demais elementos criados especificamente para o FitPro são de propriedade do desenvolvedor, ressalvado o conteúdo de terceiros mencionado na cláusula 6, que permanece sob suas licenças originais.
+
+8. MODIFICAÇÕES E DESCONTINUAÇÃO
+
+O desenvolvedor se reserva o direito de, a qualquer momento e sem aviso prévio, modificar, suspender ou descontinuar total ou parcialmente o App ou qualquer de suas funcionalidades, sem qualquer responsabilidade perante o usuário por tais alterações.
+
+9. LIMITAÇÃO DE RESPONSABILIDADE
+
+Na máxima extensão permitida pela lei aplicável, o desenvolvedor não será responsável por quaisquer danos diretos, indiretos, incidentais, consequenciais ou punitivos decorrentes do uso ou da impossibilidade de uso do App, incluindo, sem limitação, perda de dados, lesões físicas, lucros cessantes ou danos morais.
+
+10. INTEGRAÇÕES OPCIONAIS COM TERCEIROS
+
+O App pode oferecer integrações opcionais com serviços de terceiros (por exemplo, sincronização com listas de compras de assistentes de voz). Tais integrações são opcionais, exigem autorização explícita do usuário (login/autorização junto ao respectivo terceiro) e estão sujeitas também aos termos de uso e políticas de privacidade do serviço terceiro integrado, sobre os quais o desenvolvedor do FitPro não tem controle nem responsabilidade.
+
+11. LEI APLICÁVEL
+
+Estes Termos são regidos pelas leis da República Federativa do Brasil.
+
+12. CONTATO
+
+Dúvidas sobre estes Termos podem ser direcionadas pelos canais de suporte indicados dentro do próprio App.`;
+
+    const container = document.getElementById('content');
+    const blocks = raw.split(/\n\n+/);
+    const headerRegex = /^\d+\.\s+[A-ZÀ-Ú\s]+$/;
+    for (const block of blocks) {
+      const el = document.createElement(headerRegex.test(block.trim()) ? 'div' : 'p');
+      if (headerRegex.test(block.trim())) el.className = 'section-title';
+      el.textContent = block.trim();
+      container.appendChild(el);
+    }
+  </script>
+</body>
+</html>
